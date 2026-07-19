@@ -1,0 +1,338 @@
+[
+  {
+    "id": 1,
+    "name": "Blush Líquido",
+    "price": "R$7,99",
+    "image": "BlushLiquido.jpg",
+    "description": ""
+  },
+  {
+    "id": 2,
+    "name": "Modelador de Cachos",
+    "price": "R$9,99",
+    "image": "Modelador.jpg",
+    "description": ""
+  },
+  {
+    "id": 3,
+    "name": "Esfoliante Labial",
+    "price": "R$7,99",
+    "image": "EsfolianteLabial.jpg",
+    "description": ""
+  },
+  {
+    "id": 4,
+    "name": "Sombra Líquida",
+    "price": "R$7,99",
+    "image": "SombraLiquida.jpg",
+    "description": ""
+  },
+  {
+    "id": 5,
+    "name": "Gloss Sarah's Beauty",
+    "price": "R$7,99",
+    "image": "GlossSara.png",
+    "description": ""
+  },
+  {
+    "id": 6,
+    "name": "Kit 3 Pentes",
+    "price": "R$7,99",
+    "image": "KitPente.jpg",
+    "description": ""
+  },
+  {
+    "id": 7,
+    "name": "Touca de Cetim",
+    "price": "R$7,99",
+    "image": "Touca.jpg",
+    "description": ""
+  },
+  {
+    "id": 8,
+    "name": "Gloss de Mel",
+    "price": "R$7,99",
+    "image": "GlossMel.jpg",
+    "description": ""
+  },
+  {
+    "id": 9,
+    "name": "Gloss Super Pink",
+    "price": "R$7,99",
+    "image": "GlossSuperPink.png",
+    "description": ""
+  },
+  {
+    "id": 10,
+    "name": "Pó Compacto",
+    "price": "R$7,99",
+    "image": "pocompacto.png",
+    "description": ""
+  },
+  {
+    "id": 11,
+    "name": "Lip Bunny Triple ✨ Lançamento",
+    "price": "R$45,00",
+    "image": "LipBunny.png",
+    "description": ""
+  },
+  {
+    "id": 12,
+    "name": "Blush Cremoso",
+    "price": "R$7,99",
+    "image": "brushcr.png",
+    "description": ""
+  },
+  {
+    "id": 13,
+    "name": "Kit Navalha",
+    "price": "R$7,99",
+    "image": "Navalha.jpg",
+    "description": ""
+  },
+  {
+    "id": 14,
+    "name": "Presilhas de Flor",
+    "price": "R$7,99",
+    "image": "PresilhasFlor.jpg",
+    "description": ""
+  },
+  {
+    "id": 15,
+    "name": "Sabonete Líquido Facial",
+    "price": "R$7,99",
+    "image": "Saboneteliquido.jpg",
+    "description": ""
+  },
+  {
+    "id": 16,
+    "name": "Curvex",
+    "price": "R$6,99",
+    "image": "Curvex.jpg",
+    "description": ""
+  },
+  {
+    "id": 17,
+    "name": "Delineador Ruby Rose",
+    "price": "R$7,99",
+    "image": "Delineador.jpg",
+    "description": ""
+  },
+  {
+    "id": 18,
+    "name": "Rímel Colossal",
+    "price": "R$7,99",
+    "image": "Rimel.jpg",
+    "description": ""
+  },
+  {
+    "id": 19,
+    "name": "Pó Solto Efeito Blindagem",
+    "price": "R$7,99",
+    "image": "PoFacial.jpg",
+    "description": ""
+  },
+  {
+    "id": 20,
+    "name": "Pó Tapioca",
+    "price": "R$7,99",
+    "image": "PoTapioca.jpg",
+    "description": ""
+  },
+  {
+    "id": 21,
+    "name": "Rímel Incolor",
+    "price": "R$7,99",
+    "image": "RimelIncolor.jpg",
+    "description": ""
+  },
+  {
+    "id": 22,
+    "name": "Tiara Esportiva",
+    "price": "R$6,99",
+    "image": "Tiara.jpg",
+    "description": ""
+  },
+  {
+    "id": 23,
+    "name": "Kit  3 Presilhas Estrela",
+    "price": "R$6,99",
+    "image": "KitEstrelas.jpg",
+    "description": ""
+  },
+  {
+    "id": 24,
+    "name": "Body Splash",
+    "price": "R$8,99",
+    "image": "BodySplash.jpg",
+    "description": ""
+  },
+  {
+    "id": 25,
+    "name": "Faixa de Cabelo Sortida",
+    "price": "R$6,99",
+    "image": "FaixaColorida.png",
+    "description": ""
+  },
+  {
+    "id": 26,
+    "name": "Pó Banana",
+    "price": "R$7,99",
+    "image": "PoBanana.jpg",
+    "description": ""
+  },
+  {
+    "id": 27,
+    "name": "Adstringente / Tônico / Água Micelar",
+    "price": "R$7,99",
+    "image": "Ads.jpg",
+    "description": ""
+  },
+  {
+    "id": 28,
+    "name": "Xuxinha Metalizada",
+    "price": "R$6,99",
+    "image": "XuxaMetal.png",
+    "description": ""
+  },
+  {
+    "id": 29,
+    "name": "Kit Liguinha",
+    "price": "R$7,99",
+    "image": "KitLiguinha.jpg",
+    "description": ""
+  },
+  {
+    "id": 30,
+    "name": "Lip Honey",
+    "price": "R$25,00",
+    "image": "LipHoney.png",
+    "description": ""
+  },
+  {
+    "id": 31,
+    "name": "Espelho",
+    "price": "R$15,00",
+    "image": "Espelho.jpg",
+    "description": ""
+  },
+  {
+    "id": 32,
+    "name": "Kit Pincel",
+    "price": "R$25,00",
+    "image": "pincel.jpg",
+    "description": ""
+  },
+  {
+    "id": 33,
+    "name": "Pó Compacto Ruby Rose",
+    "price": "R$7,99",
+    "image": "PoRuby.png",
+    "description": ""
+  },
+  {
+    "id": 34,
+    "name": "Base Matte",
+    "price": "R$7,99",
+    "image": "base2.jpg",
+    "description": ""
+  },
+  {
+    "id": 35,
+    "name": "Corretivo",
+    "price": "R$7,99",
+    "image": "Corretivo.jpg",
+    "description": ""
+  },
+  {
+    "id": 36,
+    "name": "Base Adversa",
+    "price": "R$7,99",
+    "image": "Base.jpg",
+    "description": ""
+  },
+  {
+    "id": 37,
+    "name": "Delineador de Silicone",
+    "price": "R$6,99",
+    "image": "DelineadorSilicone.jpg",
+    "description": ""
+  },
+  {
+    "id": 38,
+    "name": "Lenço Umedecido",
+    "price": "R$7,99",
+    "image": "Lenço.jpg",
+    "description": ""
+  },
+  {
+    "id": 39,
+    "name": "Lápis de Olho Marrom/Preto",
+    "price": "R$6,99",
+    "image": "LapisOlho.jpg",
+    "description": ""
+  },
+  {
+    "id": 40,
+    "name": "Iluminador Líquido",
+    "price": "R$7,99",
+    "image": "Iluminador.jpg",
+    "description": ""
+  },
+  {
+    "id": 41,
+    "name": "Cola de Cílios",
+    "price": "R$6,99",
+    "image": "ColaCilios.jpg",
+    "description": ""
+  },
+  {
+    "id": 42,
+    "name": "Cílios Postiços Sabrina Sato",
+    "price": "R$7,99",
+    "image": "Cilios.jpg",
+    "description": ""
+  },
+  {
+    "id": 43,
+    "name": "Kit Esponjas",
+    "price": "R$6,99",
+    "image": "KitEsponja.jpg",
+    "description": ""
+  },
+  {
+    "id": 44,
+    "name": "Lápis de Boca",
+    "price": "R$6,99",
+    "image": "LapisBoca.png",
+    "description": ""
+  },
+  {
+    "id": 45,
+    "name": "Pó facial de Rosa Mosqueta",
+    "price": "R$7,99",
+    "image": "PoRosa.jpg",
+    "description": ""
+  },
+  {
+    "id": 46,
+    "name": "Bolsa Baguete",
+    "price": "R$34,99",
+    "image": "Bolsa.png",
+    "description": ""
+  },
+  {
+    "id": 47,
+    "name": "Esfoliante de Corpo",
+    "price": "R$8,99",
+    "image": "EsfolianteCorpo.png",
+    "description": ""
+  },
+  {
+    "id": 48,
+    "name": "Xuxa de Cetim",
+    "price": "R$6,99",
+    "image": "XuxaCetim.jpg",
+    "description": ""
+  }
+]
