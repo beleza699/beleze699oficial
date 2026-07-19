@@ -1,62 +1,72 @@
-const express = require("express");
-const fs = require("fs");
-const cors = require("cors");
+const token = "SEU_TOKEN";
+const owner = "beleza699";
+const repo = "NOME_DO_REPOSITORIO";
+const arquivo = "database.json";
 
-const app = express();
 
-app.use(cors());
-app.use(express.json());
+async function salvarJSON(novoDado){
 
-const PORT = 3000;
+const url =
+`https://api.github.com/repos/${owner}/${repo}/contents/${arquivo}`;
 
-function lerBanco(){
-    return JSON.parse(
-        fs.readFileSync("./database.json", "utf8")
-    );
+
+// pegar arquivo atual
+
+let resposta = await fetch(url,{
+headers:{
+Authorization:`Bearer ${token}`
 }
-
-function salvarBanco(dados){
-    fs.writeFileSync(
-        "./database.json",
-        JSON.stringify(dados, null, 2)
-    );
-}
+});
 
 
-// TESTE CADASTRO USUARIO
-app.post("/api/usuarios", (req,res)=>{
-
-    let banco = lerBanco();
-
-    const usuario = {
-        id: Date.now(),
-        nome: req.body.nome,
-        email: req.body.email
-    };
+let dadosArquivo = await resposta.json();
 
 
-    banco.usuarios.push(usuario);
+let conteudo = 
+atob(dadosArquivo.content);
 
-    salvarBanco(banco);
+
+let banco = JSON.parse(conteudo);
 
 
-    res.json({
-        mensagem:"Usuário salvo!",
-        usuario
-    });
+// adicionar
+
+banco.usuarios.push(novoDado);
+
+
+// converter novamente
+
+let novoConteudo =
+btoa(JSON.stringify(banco,null,2));
+
+
+// enviar atualização
+
+await fetch(url,{
+method:"PUT",
+headers:{
+Authorization:`Bearer ${token}`,
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+
+message:"Atualizando banco JSON",
+
+content:novoConteudo,
+
+sha:dadosArquivo.sha
+
+})
 
 });
 
 
-app.get("/api/usuarios",(req,res)=>{
+console.log("Salvo no GitHub!");
 
-    let banco = lerBanco();
-
-    res.json(banco.usuarios);
-
-});
+}
 
 
-app.listen(PORT,()=>{
-    console.log("Servidor rodando na porta 3000");
+salvarJSON({
+nome:"Maria",
+email:"teste@email.com"
 });
