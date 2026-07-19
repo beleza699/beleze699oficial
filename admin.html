@@ -9,274 +9,501 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --pk1:#fff0f4;--pk2:#ffd6e2;--pk3:#ffadc8;--pk4:#f472a0;--pk5:#ff5276;--pk6:#a8245a;
-  --white:#fff;--text:#2d1a27;--muted:#9a7080;--border:#ffd0e0;
+  --white:#fff;--text:#2d1a27;--muted:#9a7080;--border:#ffd0e0;--ok:#1c8a3a;--ok-bg:#e6fbe9;
 }
-body{font-family:'Nunito',sans-serif;background:var(--pk1);color:var(--text);min-height:100vh;padding:24px 16px 60px}
-.wrap{max-width:520px;margin:0 auto}
-h1{font-size:1.5rem;font-weight:900;color:var(--pk5);margin-bottom:6px;display:flex;align-items:center;gap:8px}
-.sub{color:var(--muted);font-size:0.88rem;margin-bottom:24px}
-.box{background:var(--white);border:1.5px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 2px 16px rgba(212,58,119,.07);margin-bottom:18px}
-label{display:block;font-weight:800;font-size:0.82rem;color:var(--text);margin-bottom:6px;margin-top:14px}
-label:first-child{margin-top:0}
-input[type=text],input[type=password],textarea{
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:var(--pk1);color:var(--text);min-height:100vh;padding-bottom:60px}
+
+/* ---------- HEADER ---------- */
+header{
+  background:var(--white);border-bottom:2px solid var(--pk2);
+  position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(212,58,119,.07);
+}
+.hdr{
+  max-width:1100px;margin:0 auto;padding:16px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.hdr h1{font-size:1.35rem;font-weight:900;color:var(--pk5);display:flex;align-items:center;gap:8px}
+.hdr h1 small{display:block;font-size:0.66rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--pk4);font-weight:800;margin-top:2px}
+.hdr a.back{color:var(--muted);font-size:0.8rem;font-weight:700;text-decoration:underline}
+
+main{max-width:1100px;margin:0 auto;padding:26px 18px 0}
+
+/* ---------- TOOLBAR / STATUS ---------- */
+.toolbar{
+  background:var(--white);border:1.5px solid var(--border);border-radius:18px;
+  padding:18px 20px;margin-bottom:22px;box-shadow:0 2px 16px rgba(212,58,119,.07);
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+}
+.sync{display:flex;align-items:center;gap:8px;font-weight:800;font-size:0.85rem;color:var(--ok)}
+.sync .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0}
+.sync.warn{color:#b8860b}
+.sync.warn .dot{background:#f0b429}
+.toolbar-info{font-size:0.78rem;color:var(--muted);line-height:1.5;max-width:560px}
+.toolbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+button, .btn{
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:0.8rem;
+  border-radius:99px;padding:10px 18px;cursor:pointer;border:1.5px solid transparent;
+  transition:opacity .2s,transform .15s,background .2s;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary{background:linear-gradient(135deg,var(--pk4),var(--pk5));color:#fff}
+.btn-primary:hover{opacity:.9;transform:scale(1.02)}
+.btn-ghost{background:var(--white);color:var(--pk5);border-color:var(--pk3)}
+.btn-ghost:hover{background:var(--pk1)}
+.btn-danger{background:var(--white);color:#c0264a;border-color:#ffb9c7}
+.btn-danger:hover{background:#fff0f2}
+button:disabled{opacity:.6;cursor:not-allowed;transform:none}
+input[type=file]{display:none}
+
+/* ---------- FORM CARD ---------- */
+.box{
+  background:var(--white);border:1.5px solid var(--border);border-radius:18px;
+  padding:22px;box-shadow:0 2px 16px rgba(212,58,119,.07);margin-bottom:22px;
+}
+.box h2{font-size:1.1rem;font-weight:900;color:var(--pk5);margin-bottom:2px}
+.box .sub{color:var(--muted);font-size:0.8rem;margin-bottom:18px}
+label{display:block;font-weight:800;font-size:0.78rem;color:var(--text);margin-bottom:6px;margin-top:14px}
+label:first-of-type{margin-top:0}
+input[type=text],textarea{
   width:100%;border:1.5px solid var(--border);border-radius:12px;
   padding:10px 12px;font-family:inherit;font-size:0.9rem;color:var(--text);background:var(--pk1);
 }
-textarea{resize:vertical;min-height:70px}
-input[type=file]{width:100%;font-size:0.85rem}
-.row{display:flex;gap:10px}
-.row>div{flex:1}
-.checkbox-row{display:flex;align-items:center;gap:8px;margin-top:14px}
-.checkbox-row input{width:16px;height:16px}
-.checkbox-row label{margin:0;font-weight:700;font-size:0.82rem}
-button{
-  width:100%;margin-top:18px;background:linear-gradient(135deg,var(--pk4),var(--pk5));
-  color:#fff;border:none;padding:13px 14px;border-radius:99px;
-  font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:800;cursor:pointer;
-  transition:opacity .2s,transform .15s;
+input[type=text]:focus,textarea:focus{outline:2px solid var(--pk3);outline-offset:1px}
+textarea{resize:vertical;min-height:64px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.price-wrap{position:relative}
+.img-row{display:flex;gap:14px;align-items:flex-end;margin-top:14px}
+.img-row .col{flex:1}
+.img-preview{
+  width:66px;height:66px;border-radius:12px;border:1.5px solid var(--border);
+  background:var(--pk1) center/cover no-repeat;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--muted);
+  text-align:center;line-height:1.2;padding:4px;
 }
-button:hover{opacity:.9;transform:scale(1.01)}
-button:disabled{opacity:.6;cursor:not-allowed;transform:none}
-button.secondary{background:var(--white);color:var(--pk5);border:1.5px solid var(--pk3);margin-top:8px}
-.msg{margin-top:14px;padding:10px 14px;border-radius:12px;font-size:0.85rem;font-weight:700;display:none}
-.msg.ok{background:#e6fbe9;color:#1c8a3a;display:block}
+.hint{color:var(--muted);font-size:0.72rem;margin-top:5px;line-height:1.4}
+.form-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.msg{margin-top:14px;padding:10px 14px;border-radius:12px;font-size:0.83rem;font-weight:700;display:none}
+.msg.ok{background:var(--ok-bg);color:var(--ok);display:block}
 .msg.err{background:#ffe6ea;color:#c0264a;display:block}
-.preview{width:100%;max-width:180px;border-radius:12px;margin-top:10px;display:none;border:1.5px solid var(--border)}
-.hint{color:var(--muted);font-size:0.76rem;margin-top:4px;line-height:1.4}
-#panel-form{display:none}
-.top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.link-sair{color:var(--muted);font-size:0.78rem;text-decoration:underline;cursor:pointer;background:none;border:none;width:auto;margin:0;padding:0;font-weight:700}
+
+/* ---------- LIST HEAD / SEARCH ---------- */
+.list-head{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;
+}
+.list-head h2{font-size:1.15rem;font-weight:900;color:var(--pk5)}
+.list-head h2 span{color:var(--muted);font-weight:700;font-size:0.85rem}
+#search{
+  border:1.5px solid var(--border);border-radius:99px;padding:9px 16px;
+  font-family:inherit;font-size:0.85rem;background:var(--white);color:var(--text);min-width:220px;
+}
+#search:focus{outline:2px solid var(--pk3)}
+
+/* ---------- PRODUCT GRID ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+.pcard{
+  background:var(--white);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;
+  box-shadow:0 2px 12px rgba(212,58,119,.06);display:flex;flex-direction:column;
+  transition:transform .2s,box-shadow .2s;
+}
+.pcard:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(212,58,119,.14)}
+.pcard-img{width:100%;aspect-ratio:1/1;background:var(--pk1) center/cover no-repeat;position:relative}
+.pcard-img .noimg{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:var(--muted);text-align:center;padding:8px;
+}
+.pcard-body{padding:12px 13px 14px;display:flex;flex-direction:column;gap:5px;flex:1}
+.pcard-body h3{font-size:0.85rem;font-weight:800;color:var(--text);line-height:1.3}
+.pcard-price{font-weight:900;font-size:0.92rem;color:var(--pk5)}
+.pcard-desc{font-size:0.72rem;color:var(--muted);line-height:1.4;max-height:2.8em;overflow:hidden}
+.pcard-actions{display:flex;gap:8px;margin-top:auto;padding-top:10px}
+.pcard-actions button{flex:1;font-size:0.7rem;padding:8px 6px;justify-content:center}
+
+.empty-state{
+  text-align:center;padding:56px 20px;color:var(--muted);font-size:0.88rem;
+  border:1.5px dashed var(--border);border-radius:18px;background:var(--white);
+}
+
+/* ---------- TOAST ---------- */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--pk6);color:#fff;font-size:0.82rem;font-weight:800;padding:12px 22px;
+  border-radius:99px;opacity:0;pointer-events:none;transition:all .3s ease;z-index:999;
+  box-shadow:0 16px 36px rgba(0,0,0,.22);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:640px){
+  .grid-2{grid-template-columns:1fr}
+  .toolbar{flex-direction:column;align-items:flex-start}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>💖 Painel Admin</h1>
-  <p class="sub">Adicione produtos com foto e descrição — eles são salvos direto no site.</p>
 
-  <!-- LOGIN -->
-  <div class="box" id="panel-login">
-    <label>Usuário/Organização do GitHub</label>
-    <input type="text" id="cfg-owner" placeholder="ex: seu-usuario">
+<header>
+  <div class="hdr">
+    <h1>💖 Painel Admin<small>Beleza 6,99</small></h1>
+    <a class="back" href="index.html">← voltar para o site</a>
+  </div>
+</header>
 
-    <label>Nome do repositório</label>
-    <input type="text" id="cfg-repo" placeholder="ex: beleza699">
+<main>
 
-    <label>Branch</label>
-    <input type="text" id="cfg-branch" value="main">
-
-    <label>Token de acesso pessoal (GitHub)</label>
-    <input type="password" id="cfg-token" placeholder="ghp_xxxxxxxxxxxx">
-    <p class="hint">Crie em github.com → Settings → Developer settings → Personal access tokens (fine-grained), com permissão <b>Contents: Read and write</b> apenas neste repositório. Não compartilhe esse token com ninguém.</p>
-
-    <div class="checkbox-row">
-      <input type="checkbox" id="cfg-remember" checked>
-      <label for="cfg-remember">Lembrar neste dispositivo</label>
+  <div class="toolbar">
+    <div>
+      <div class="sync" id="sync-status"><span class="dot"></span> texto</div>
+      <div class="toolbar-info" id="toolbar-info"></div>
     </div>
-
-    <button onclick="login()">Entrar</button>
-    <div class="msg" id="login-msg"></div>
+    <div class="toolbar-actions">
+      <label class="btn btn-ghost" for="import-file">↑ Importar JSON</label>
+      <input type="file" id="import-file" accept="application/json">
+      <button class="btn-ghost" id="btn-copy">⧉ Copiar JSON</button>
+      <button class="btn-danger" id="btn-reset-local">↺ Usar catálogo publicado</button>
+      <button class="btn-primary" id="btn-download">⬇ Baixar produtos.json</button>
+    </div>
   </div>
 
-  <!-- FORM -->
-  <div id="panel-form">
-    <div class="top-actions">
-      <span class="hint" id="repo-label"></span>
-      <button class="link-sair" onclick="logout()">sair</button>
-    </div>
+  <div class="box">
+    <h2 id="form-title">Novo produto</h2>
+    <div class="sub" id="form-sub">Preencha os dados e clique em adicionar.</div>
 
-    <div class="box">
-      <label>Nome do produto</label>
-      <input type="text" id="p-name" placeholder="ex: Gloss Cereja">
+    <form id="product-form">
+      <input type="hidden" id="f-id">
 
-      <div class="row">
+      <label for="f-name">Nome do produto</label>
+      <input type="text" id="f-name" placeholder="ex: Gloss Cereja" required>
+
+      <div class="grid-2">
         <div>
-          <label>Preço</label>
-          <input type="text" id="p-price" placeholder="R$7,99">
+          <label for="f-price">Preço</label>
+          <div class="price-wrap">
+            <input type="text" id="f-price" placeholder="R$7,99" required>
+          </div>
+        </div>
+        <div>
+          <label for="f-image">Nome do arquivo da imagem</label>
+          <input type="text" id="f-image" placeholder="ex: GlossCereja.jpg">
         </div>
       </div>
 
-      <label>Descrição</label>
-      <textarea id="p-desc" placeholder="ex: Gloss volumoso com brilho intenso e cheirinho de cereja."></textarea>
+      <label for="f-desc">Descrição</label>
+      <textarea id="f-desc" placeholder="ex: Gloss volumoso com brilho intenso e cheirinho de cereja."></textarea>
 
-      <label>Foto do produto</label>
-      <input type="file" id="p-image" accept="image/*" onchange="previewImage(event)">
-      <img id="p-preview" class="preview">
+      <div class="img-row">
+        <div class="col">
+          <label style="margin-top:0">Ou envie uma foto do dispositivo</label>
+          <input type="file" id="f-file" accept="image/*" style="display:block;font-size:0.8rem">
+          <p class="hint">Ao enviar uma foto aqui, ela é salva junto com o produto (não precisa subir arquivo separado). Se preferir, use o campo de nome de arquivo acima, caso as fotos já estejam na pasta do site.</p>
+        </div>
+        <div class="img-preview" id="f-preview">sem imagem</div>
+      </div>
 
-      <button onclick="submitProduct()" id="submit-btn">✨ Salvar produto no site</button>
+      <div class="form-actions">
+        <button type="button" class="btn-ghost" id="btn-cancel-edit" style="display:none">cancelar edição</button>
+        <button type="submit" class="btn-primary" id="btn-submit">✨ Adicionar produto</button>
+      </div>
       <div class="msg" id="form-msg"></div>
-    </div>
+    </form>
   </div>
-</div>
+
+  <div class="list-head">
+    <h2>Catálogo <span id="total-count"></span></h2>
+    <input type="text" id="search" placeholder="Buscar por nome…">
+  </div>
+
+  <div id="catalog"></div>
+
+</main>
+
+<div id="toast"></div>
 
 <script>
-const API = 'https://api.github.com';
-let cfg = null;
-let imageBase64 = null;
-let imageExt = null;
+const STORAGE_KEY = 'beleza699_produtos_admin';
+let produtos = [];
+let editingId = null;
+let uploadedImageData = null; // base64 data URI da foto enviada no form atual
 
-function slugify(str) {
-  return str.toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+/* ---------- CARREGAR DADOS ---------- */
+function loadProdutos() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      produtos = JSON.parse(saved);
+      renderCatalog();
+      updateSyncBadge();
+      return;
+    } catch (e) { /* segue para o fetch */ }
+  }
+  fetch('produtos.json', { cache: 'no-store' })
+    .then(r => r.json())
+    .then(data => { produtos = data; renderCatalog(); updateSyncBadge(); })
+    .catch(() => {
+      showToast('Não encontrei produtos.json — comece adicionando produtos abaixo.');
+      produtos = [];
+      renderCatalog();
+      updateSyncBadge();
+    });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('admin_cfg');
-  if (saved) {
-    cfg = JSON.parse(saved);
-    document.getElementById('cfg-owner').value = cfg.owner;
-    document.getElementById('cfg-repo').value = cfg.repo;
-    document.getElementById('cfg-branch').value = cfg.branch;
-    document.getElementById('cfg-token').value = cfg.token;
-    showForm();
+function persist() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(produtos));
+  updateSyncBadge();
+}
+
+function updateSyncBadge() {
+  const el = document.getElementById('sync-status');
+  const info = document.getElementById('toolbar-info');
+  const hasLocal = !!localStorage.getItem(STORAGE_KEY);
+  if (hasLocal) {
+    el.className = 'sync';
+    el.innerHTML = '<span class="dot"></span> Conectado ao site — o que você editar aqui já aparece no index.html neste mesmo navegador.';
+    info.textContent = 'Para que as mudanças apareçam para todo mundo (não só neste navegador), clique em "Baixar produtos.json" e substitua o arquivo no seu site/repositório.';
+  } else {
+    el.className = 'sync warn';
+    el.innerHTML = '<span class="dot"></span> Mostrando o catálogo publicado (produtos.json) — ainda sem alterações locais.';
+    info.textContent = 'Adicione, edite ou remova produtos abaixo. As mudanças ficam salvas neste navegador até você baixar o produtos.json atualizado.';
   }
+}
+
+/* ---------- HELPERS ---------- */
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function nextId() {
+  return produtos.reduce((max, p) => Math.max(max, p.id || 0), 0) + 1;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+function imgSrcFor(p) {
+  if (!p.image) return '';
+  // aceita tanto nome de arquivo (relativo à pasta do site) quanto data URI (foto enviada direto)
+  return p.image;
+}
+
+/* ---------- RENDER CATÁLOGO ---------- */
+function renderCatalog() {
+  const catalog = document.getElementById('catalog');
+  const search = document.getElementById('search').value.trim().toLowerCase();
+
+  const filtered = produtos.filter(p => !search || (p.name || '').toLowerCase().includes(search));
+
+  document.getElementById('total-count').textContent =
+    produtos.length ? `(${filtered.length} de ${produtos.length})` : '';
+
+  if (!produtos.length) {
+    catalog.innerHTML = '<div class="empty-state">Nenhum produto cadastrado ainda. Use o formulário acima para adicionar o primeiro.</div>';
+    return;
+  }
+  if (!filtered.length) {
+    catalog.innerHTML = '<div class="empty-state">Nenhum produto encontrado para essa busca.</div>';
+    return;
+  }
+
+  catalog.innerHTML = `<div class="grid">${filtered.map(productCardHTML).join('')}</div>`;
+}
+
+function productCardHTML(p) {
+  const src = imgSrcFor(p);
+  return `
+    <div class="pcard">
+      <div class="pcard-img" style="${src ? `background-image:url('${escapeHtml(src)}')` : ''}">
+        ${src ? '' : '<div class="noimg">sem imagem</div>'}
+      </div>
+      <div class="pcard-body">
+        <h3>${escapeHtml(p.name || '(sem nome)')}</h3>
+        <div class="pcard-price">${escapeHtml(p.price || '')}</div>
+        ${p.description ? `<div class="pcard-desc">${escapeHtml(p.description)}</div>` : ''}
+        <div class="pcard-actions">
+          <button class="btn-ghost" onclick="startEdit(${p.id})">✎ editar</button>
+          <button class="btn-danger" onclick="deleteProduto(${p.id})">✕ remover</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- PREVIEW DE IMAGEM ---------- */
+function updatePreviewFromUrl(val) {
+  const box = document.getElementById('f-preview');
+  if (!val) { box.style.backgroundImage = ''; box.textContent = 'sem imagem'; return; }
+  const img = new Image();
+  img.onload = () => { box.style.backgroundImage = `url('${val}')`; box.textContent = ''; };
+  img.onerror = () => { box.style.backgroundImage = ''; box.textContent = 'não encontrada'; };
+  img.src = val;
+}
+
+document.getElementById('f-image').addEventListener('input', e => {
+  uploadedImageData = null; // digitar nome de arquivo cancela a foto enviada
+  updatePreviewFromUrl(e.target.value.trim());
 });
 
-function showForm() {
-  document.getElementById('panel-login').style.display = 'none';
-  document.getElementById('panel-form').style.display = 'block';
-  document.getElementById('repo-label').textContent = cfg.owner + '/' + cfg.repo + ' (' + cfg.branch + ')';
-}
-
-async function login() {
-  const owner  = document.getElementById('cfg-owner').value.trim();
-  const repo   = document.getElementById('cfg-repo').value.trim();
-  const branch = document.getElementById('cfg-branch').value.trim() || 'main';
-  const token  = document.getElementById('cfg-token').value.trim();
-  const remember = document.getElementById('cfg-remember').checked;
-  const msg = document.getElementById('login-msg');
-
-  if (!owner || !repo || !token) {
-    msg.className = 'msg err';
-    msg.textContent = 'Preencha usuário, repositório e token.';
-    return;
-  }
-
-  msg.className = 'msg';
-  msg.textContent = '';
-
-  try {
-    const res = await fetch(`${API}/repos/${owner}/${repo}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('Não foi possível acessar o repositório. Confira usuário, repositório e token.');
-
-    cfg = { owner, repo, branch, token };
-    if (remember) localStorage.setItem('admin_cfg', JSON.stringify(cfg));
-    showForm();
-  } catch (err) {
-    msg.className = 'msg err';
-    msg.textContent = err.message;
-  }
-}
-
-function logout() {
-  localStorage.removeItem('admin_cfg');
-  cfg = null;
-  document.getElementById('panel-form').style.display = 'none';
-  document.getElementById('panel-login').style.display = 'block';
-}
-
-function previewImage(e) {
+document.getElementById('f-file').addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
-  imageExt = file.name.split('.').pop().toLowerCase();
   const reader = new FileReader();
   reader.onload = () => {
-    imageBase64 = reader.result.split(',')[1];
-    const prev = document.getElementById('p-preview');
-    prev.src = reader.result;
-    prev.style.display = 'block';
+    uploadedImageData = reader.result; // data URI
+    document.getElementById('f-image').value = '';
+    const box = document.getElementById('f-preview');
+    box.style.backgroundImage = `url('${uploadedImageData}')`;
+    box.textContent = '';
   };
   reader.readAsDataURL(file);
-}
+});
 
-async function ghGetFile(path) {
-  const res = await fetch(`${API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`, {
-    headers: { Authorization: `Bearer ${cfg.token}` }
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error('Erro ao buscar ' + path + ' no repositório.');
-  return res.json();
-}
+/* ---------- FORM: ADICIONAR / SALVAR EDIÇÃO ---------- */
+document.getElementById('product-form').addEventListener('submit', e => {
+  e.preventDefault();
 
-async function ghPutFile(path, contentBase64, message, sha) {
-  const body = { message, content: contentBase64, branch: cfg.branch };
-  if (sha) body.sha = sha;
-  const res = await fetch(`${API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${cfg.token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || ('Erro ao salvar ' + path));
-  }
-  return res.json();
-}
-
-async function submitProduct() {
-  const name  = document.getElementById('p-name').value.trim();
-  const price = document.getElementById('p-price').value.trim();
-  const desc  = document.getElementById('p-desc').value.trim();
-  const msg   = document.getElementById('form-msg');
-  const btn   = document.getElementById('submit-btn');
+  const name  = document.getElementById('f-name').value.trim();
+  const price = document.getElementById('f-price').value.trim();
+  const desc  = document.getElementById('f-desc').value.trim();
+  const imageField = document.getElementById('f-image').value.trim();
+  const image = uploadedImageData || imageField;
+  const msg = document.getElementById('form-msg');
 
   msg.className = 'msg';
   msg.textContent = '';
 
-  if (!name || !price || !imageBase64) {
+  if (!name || !price) {
     msg.className = 'msg err';
-    msg.textContent = 'Preencha nome, preço e escolha uma foto.';
+    msg.textContent = 'Preencha ao menos nome e preço.';
     return;
   }
 
-  btn.disabled = true;
-  btn.textContent = 'Salvando...';
-
-  try {
-    // 1. Enviar a imagem para /produtos/
-    const fileName = `${slugify(name)}-${Date.now()}.${imageExt}`;
-    const imagePath = `produtos/${fileName}`;
-    await ghPutFile(imagePath, imageBase64, `Adiciona foto: ${name}`);
-
-    // 2. Buscar produtos.json atual
-    const current = await ghGetFile('produtos.json');
-    let produtos = [];
-    let sha = null;
-    if (current) {
-      sha = current.sha;
-      const decoded = decodeURIComponent(escape(atob(current.content.replace(/\n/g,''))));
-      produtos = JSON.parse(decoded);
-    }
-
-    // 3. Adicionar novo produto
-    const newId = produtos.length ? Math.max(...produtos.map(p => p.id || 0)) + 1 : 1;
-    produtos.push({ id: newId, name, price, image: imagePath, description: desc });
-
-    // 4. Salvar produtos.json atualizado
-    const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(produtos, null, 2))));
-    await ghPutFile('produtos.json', newContent, `Adiciona produto: ${name}`, sha);
-
-    msg.className = 'msg ok';
-    msg.textContent = '✅ Produto salvo! Ele aparece no site em cerca de 1 minuto (o GitHub Pages precisa republicar).';
-
-    document.getElementById('p-name').value = '';
-    document.getElementById('p-price').value = '';
-    document.getElementById('p-desc').value = '';
-    document.getElementById('p-image').value = '';
-    document.getElementById('p-preview').style.display = 'none';
-    imageBase64 = null;
-  } catch (err) {
-    msg.className = 'msg err';
-    msg.textContent = '❌ ' + err.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '✨ Salvar produto no site';
+  if (editingId !== null) {
+    const p = produtos.find(p => p.id === editingId);
+    if (p) Object.assign(p, { name, price, image, description: desc });
+    showToast('Produto atualizado!');
+  } else {
+    produtos.push({ id: nextId(), name, price, image, description: desc });
+    showToast('Produto adicionado!');
   }
+
+  persist();
+  renderCatalog();
+  resetForm();
+});
+
+function startEdit(id) {
+  const p = produtos.find(p => p.id === id);
+  if (!p) return;
+  editingId = id;
+  uploadedImageData = null;
+
+  document.getElementById('f-id').value = p.id;
+  document.getElementById('f-name').value = p.name || '';
+  document.getElementById('f-price').value = p.price || '';
+  document.getElementById('f-desc').value = p.description || '';
+
+  if ((p.image || '').startsWith('data:')) {
+    uploadedImageData = p.image;
+    document.getElementById('f-image').value = '';
+    const box = document.getElementById('f-preview');
+    box.style.backgroundImage = `url('${p.image}')`;
+    box.textContent = '';
+  } else {
+    document.getElementById('f-image').value = p.image || '';
+    updatePreviewFromUrl(p.image || '');
+  }
+
+  document.getElementById('form-title').textContent = 'Editando: ' + (p.name || '');
+  document.getElementById('form-sub').textContent = 'Altere os campos e clique em salvar alterações.';
+  document.getElementById('btn-submit').textContent = '✓ Salvar alterações';
+  document.getElementById('btn-cancel-edit').style.display = 'inline-flex';
+
+  document.querySelector('.box').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+function resetForm() {
+  editingId = null;
+  uploadedImageData = null;
+  document.getElementById('product-form').reset();
+  document.getElementById('f-preview').style.backgroundImage = '';
+  document.getElementById('f-preview').textContent = 'sem imagem';
+  document.getElementById('form-title').textContent = 'Novo produto';
+  document.getElementById('form-sub').textContent = 'Preencha os dados e clique em adicionar.';
+  document.getElementById('btn-submit').textContent = '✨ Adicionar produto';
+  document.getElementById('btn-cancel-edit').style.display = 'none';
+  document.getElementById('form-msg').className = 'msg';
+  document.getElementById('form-msg').textContent = '';
+}
+document.getElementById('btn-cancel-edit').addEventListener('click', resetForm);
+
+/* ---------- REMOVER ---------- */
+function deleteProduto(id) {
+  const p = produtos.find(p => p.id === id);
+  if (!p) return;
+  if (!confirm(`Remover "${p.name}" do catálogo?`)) return;
+  produtos = produtos.filter(p => p.id !== id);
+  persist();
+  if (editingId === id) resetForm();
+  renderCatalog();
+  showToast('Produto removido.');
+}
+
+/* ---------- BUSCA ---------- */
+document.getElementById('search').addEventListener('input', renderCatalog);
+
+/* ---------- EXPORTAR / IMPORTAR ---------- */
+document.getElementById('btn-download').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(produtos, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'produtos.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Download iniciado — substitua o produtos.json no seu site.');
+});
+
+document.getElementById('btn-copy').addEventListener('click', () => {
+  const text = JSON.stringify(produtos, null, 2);
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('JSON copiado! Cole no produtos.json do site.'))
+    .catch(() => showToast('Não foi possível copiar automaticamente.'));
+});
+
+document.getElementById('btn-reset-local').addEventListener('click', () => {
+  if (!confirm('Isso descarta as alterações salvas neste navegador e recarrega o produtos.json publicado. Continuar?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  resetForm();
+  fetch('produtos.json', { cache: 'no-store' })
+    .then(r => r.json())
+    .then(data => { produtos = data; renderCatalog(); updateSyncBadge(); showToast('Catálogo publicado recarregado.'); })
+    .catch(() => { produtos = []; renderCatalog(); updateSyncBadge(); showToast('Não encontrei produtos.json.'); });
+});
+
+document.getElementById('import-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const data = JSON.parse(evt.target.result);
+      if (!Array.isArray(data)) throw new Error('formato inválido');
+      produtos = data;
+      persist();
+      renderCatalog();
+      showToast('Catálogo importado com sucesso!');
+    } catch (err) {
+      showToast('Arquivo inválido — verifique se é um produtos.json válido.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+loadProdutos();
 </script>
 </body>
 </html>
