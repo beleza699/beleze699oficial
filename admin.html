@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Beleza 6,99</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pk1:#fff0f4;--pk2:#ffd6e2;--pk3:#ffadc8;--pk4:#f472a0;--pk5:#ff5276;--pk6:#a8245a;
+  --white:#fff;--text:#2d1a27;--muted:#9a7080;--border:#ffd0e0;
+}
+body{font-family:'Nunito',sans-serif;background:var(--pk1);color:var(--text);min-height:100vh;padding:24px 16px 60px}
+.wrap{max-width:520px;margin:0 auto}
+h1{font-size:1.5rem;font-weight:900;color:var(--pk5);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.sub{color:var(--muted);font-size:0.88rem;margin-bottom:24px}
+.box{background:var(--white);border:1.5px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 2px 16px rgba(212,58,119,.07);margin-bottom:18px}
+label{display:block;font-weight:800;font-size:0.82rem;color:var(--text);margin-bottom:6px;margin-top:14px}
+label:first-child{margin-top:0}
+input[type=text],input[type=password],textarea{
+  width:100%;border:1.5px solid var(--border);border-radius:12px;
+  padding:10px 12px;font-family:inherit;font-size:0.9rem;color:var(--text);background:var(--pk1);
+}
+textarea{resize:vertical;min-height:70px}
+input[type=file]{width:100%;font-size:0.85rem}
+.row{display:flex;gap:10px}
+.row>div{flex:1}
+.checkbox-row{display:flex;align-items:center;gap:8px;margin-top:14px}
+.checkbox-row input{width:16px;height:16px}
+.checkbox-row label{margin:0;font-weight:700;font-size:0.82rem}
+button{
+  width:100%;margin-top:18px;background:linear-gradient(135deg,var(--pk4),var(--pk5));
+  color:#fff;border:none;padding:13px 14px;border-radius:99px;
+  font-family:'Nunito',sans-serif;font-size:0.92rem;font-weight:800;cursor:pointer;
+  transition:opacity .2s,transform .15s;
+}
+button:hover{opacity:.9;transform:scale(1.01)}
+button:disabled{opacity:.6;cursor:not-allowed;transform:none}
+button.secondary{background:var(--white);color:var(--pk5);border:1.5px solid var(--pk3);margin-top:8px}
+.msg{margin-top:14px;padding:10px 14px;border-radius:12px;font-size:0.85rem;font-weight:700;display:none}
+.msg.ok{background:#e6fbe9;color:#1c8a3a;display:block}
+.msg.err{background:#ffe6ea;color:#c0264a;display:block}
+.preview{width:100%;max-width:180px;border-radius:12px;margin-top:10px;display:none;border:1.5px solid var(--border)}
+.hint{color:var(--muted);font-size:0.76rem;margin-top:4px;line-height:1.4}
+#panel-form{display:none}
+.top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.link-sair{color:var(--muted);font-size:0.78rem;text-decoration:underline;cursor:pointer;background:none;border:none;width:auto;margin:0;padding:0;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💖 Painel Admin</h1>
+  <p class="sub">Adicione produtos com foto e descrição — eles são salvos direto no site.</p>
+
+  <!-- LOGIN -->
+  <div class="box" id="panel-login">
+    <label>Usuário/Organização do GitHub</label>
+    <input type="text" id="cfg-owner" placeholder="ex: seu-usuario">
+
+    <label>Nome do repositório</label>
+    <input type="text" id="cfg-repo" placeholder="ex: beleza699">
+
+    <label>Branch</label>
+    <input type="text" id="cfg-branch" value="main">
+
+    <label>Token de acesso pessoal (GitHub)</label>
+    <input type="password" id="cfg-token" placeholder="ghp_xxxxxxxxxxxx">
+    <p class="hint">Crie em github.com → Settings → Developer settings → Personal access tokens (fine-grained), com permissão <b>Contents: Read and write</b> apenas neste repositório. Não compartilhe esse token com ninguém.</p>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="cfg-remember" checked>
+      <label for="cfg-remember">Lembrar neste dispositivo</label>
+    </div>
+
+    <button onclick="login()">Entrar</button>
+    <div class="msg" id="login-msg"></div>
+  </div>
+
+  <!-- FORM -->
+  <div id="panel-form">
+    <div class="top-actions">
+      <span class="hint" id="repo-label"></span>
+      <button class="link-sair" onclick="logout()">sair</button>
+    </div>
+
+    <div class="box">
+      <label>Nome do produto</label>
+      <input type="text" id="p-name" placeholder="ex: Gloss Cereja">
+
+      <div class="row">
+        <div>
+          <label>Preço</label>
+          <input type="text" id="p-price" placeholder="R$7,99">
+        </div>
+      </div>
+
+      <label>Descrição</label>
+      <textarea id="p-desc" placeholder="ex: Gloss volumoso com brilho intenso e cheirinho de cereja."></textarea>
+
+      <label>Foto do produto</label>
+      <input type="file" id="p-image" accept="image/*" onchange="previewImage(event)">
+      <img id="p-preview" class="preview">
+
+      <button onclick="submitProduct()" id="submit-btn">✨ Salvar produto no site</button>
+      <div class="msg" id="form-msg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://api.github.com';
+let cfg = null;
+let imageBase64 = null;
+let imageExt = null;
+
+function slugify(str) {
+  return str.toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('admin_cfg');
+  if (saved) {
+    cfg = JSON.parse(saved);
+    document.getElementById('cfg-owner').value = cfg.owner;
+    document.getElementById('cfg-repo').value = cfg.repo;
+    document.getElementById('cfg-branch').value = cfg.branch;
+    document.getElementById('cfg-token').value = cfg.token;
+    showForm();
+  }
+});
+
+function showForm() {
+  document.getElementById('panel-login').style.display = 'none';
+  document.getElementById('panel-form').style.display = 'block';
+  document.getElementById('repo-label').textContent = cfg.owner + '/' + cfg.repo + ' (' + cfg.branch + ')';
+}
+
+async function login() {
+  const owner  = document.getElementById('cfg-owner').value.trim();
+  const repo   = document.getElementById('cfg-repo').value.trim();
+  const branch = document.getElementById('cfg-branch').value.trim() || 'main';
+  const token  = document.getElementById('cfg-token').value.trim();
+  const remember = document.getElementById('cfg-remember').checked;
+  const msg = document.getElementById('login-msg');
+
+  if (!owner || !repo || !token) {
+    msg.className = 'msg err';
+    msg.textContent = 'Preencha usuário, repositório e token.';
+    return;
+  }
+
+  msg.className = 'msg';
+  msg.textContent = '';
+
+  try {
+    const res = await fetch(`${API}/repos/${owner}/${repo}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Não foi possível acessar o repositório. Confira usuário, repositório e token.');
+
+    cfg = { owner, repo, branch, token };
+    if (remember) localStorage.setItem('admin_cfg', JSON.stringify(cfg));
+    showForm();
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = err.message;
+  }
+}
+
+function logout() {
+  localStorage.removeItem('admin_cfg');
+  cfg = null;
+  document.getElementById('panel-form').style.display = 'none';
+  document.getElementById('panel-login').style.display = 'block';
+}
+
+function previewImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  imageExt = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+  reader.onload = () => {
+    imageBase64 = reader.result.split(',')[1];
+    const prev = document.getElementById('p-preview');
+    prev.src = reader.result;
+    prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function ghGetFile(path) {
+  const res = await fetch(`${API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`, {
+    headers: { Authorization: `Bearer ${cfg.token}` }
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Erro ao buscar ' + path + ' no repositório.');
+  return res.json();
+}
+
+async function ghPutFile(path, contentBase64, message, sha) {
+  const body = { message, content: contentBase64, branch: cfg.branch };
+  if (sha) body.sha = sha;
+  const res = await fetch(`${API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${cfg.token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || ('Erro ao salvar ' + path));
+  }
+  return res.json();
+}
+
+async function submitProduct() {
+  const name  = document.getElementById('p-name').value.trim();
+  const price = document.getElementById('p-price').value.trim();
+  const desc  = document.getElementById('p-desc').value.trim();
+  const msg   = document.getElementById('form-msg');
+  const btn   = document.getElementById('submit-btn');
+
+  msg.className = 'msg';
+  msg.textContent = '';
+
+  if (!name || !price || !imageBase64) {
+    msg.className = 'msg err';
+    msg.textContent = 'Preencha nome, preço e escolha uma foto.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    // 1. Enviar a imagem para /produtos/
+    const fileName = `${slugify(name)}-${Date.now()}.${imageExt}`;
+    const imagePath = `produtos/${fileName}`;
+    await ghPutFile(imagePath, imageBase64, `Adiciona foto: ${name}`);
+
+    // 2. Buscar produtos.json atual
+    const current = await ghGetFile('produtos.json');
+    let produtos = [];
+    let sha = null;
+    if (current) {
+      sha = current.sha;
+      const decoded = decodeURIComponent(escape(atob(current.content.replace(/\n/g,''))));
+      produtos = JSON.parse(decoded);
+    }
+
+    // 3. Adicionar novo produto
+    const newId = produtos.length ? Math.max(...produtos.map(p => p.id || 0)) + 1 : 1;
+    produtos.push({ id: newId, name, price, image: imagePath, description: desc });
+
+    // 4. Salvar produtos.json atualizado
+    const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(produtos, null, 2))));
+    await ghPutFile('produtos.json', newContent, `Adiciona produto: ${name}`, sha);
+
+    msg.className = 'msg ok';
+    msg.textContent = '✅ Produto salvo! Ele aparece no site em cerca de 1 minuto (o GitHub Pages precisa republicar).';
+
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-desc').value = '';
+    document.getElementById('p-image').value = '';
+    document.getElementById('p-preview').style.display = 'none';
+    imageBase64 = null;
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = '❌ ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Salvar produto no site';
+  }
+}
+</script>
+</body>
+</html>
