@@ -39,6 +39,8 @@ main{max-width:1100px;margin:0 auto;padding:26px 18px 0}
 .sync .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0}
 .sync.warn{color:#b8860b}
 .sync.warn .dot{background:#f0b429}
+.sync.err{color:#c0264a}
+.sync.err .dot{background:#c0264a}
 .toolbar-info{font-size:0.78rem;color:var(--muted);line-height:1.5;max-width:560px}
 .toolbar-actions{display:flex;gap:8px;flex-wrap:wrap}
 
@@ -157,12 +159,33 @@ textarea{resize:vertical;min-height:64px}
       <div class="toolbar-info" id="toolbar-info"></div>
     </div>
     <div class="toolbar-actions">
+      <button class="btn-ghost" id="btn-gh-config" type="button">🔑 Publicação automática</button>
       <label class="btn btn-ghost" for="import-file">↑ Importar JSON</label>
       <input type="file" id="import-file" accept="application/json">
-      <button class="btn-ghost" id="btn-copy">⧉ Copiar JSON</button>
-      <button class="btn-danger" id="btn-reset-local">↺ Usar catálogo publicado</button>
-      <button class="btn-primary" id="btn-download">⬇ Baixar produtos.json</button>
+      <button class="btn-ghost" id="btn-copy" type="button">⧉ Copiar JSON</button>
+      <button class="btn-primary" id="btn-download" type="button">⬇ Baixar produtos.json</button>
     </div>
+  </div>
+
+  <div class="box" id="gh-config-box" style="display:none">
+    <h2>🔑 Publicação automática no site</h2>
+    <div class="sub">Conecte uma vez só. Depois disso, todo produto que você adicionar, editar ou remover aqui é publicado direto no site — sem precisar baixar nem subir arquivo.</div>
+
+    <label for="gh-token" style="margin-top:0">Token de acesso do GitHub</label>
+    <input type="text" id="gh-token" placeholder="cole aqui o token (começa com ghp_ ou github_pat_)" autocomplete="off">
+    <p class="hint">
+      <strong>Como criar o token (uma vez só):</strong><br>
+      1. Acesse <strong>github.com/settings/personal-access-tokens/new</strong><br>
+      2. Em "Repository access" escolha "Only select repositories" → selecione <strong>beleze699oficial</strong><br>
+      3. Em "Permissions" → "Repository permissions" → mude "Contents" para <strong>Read and write</strong><br>
+      4. Clique em "Generate token", copie e cole aqui.<br>
+      O token fica guardado só neste navegador/celular — se usar outro aparelho, precisa configurar de novo lá também.
+    </p>
+    <div class="form-actions">
+      <button type="button" class="btn-danger" id="btn-gh-remove">remover token</button>
+      <button type="button" class="btn-primary" id="btn-gh-save">✓ salvar e conectar</button>
+    </div>
+    <div class="msg" id="gh-msg"></div>
   </div>
 
   <div class="box">
@@ -175,30 +198,28 @@ textarea{resize:vertical;min-height:64px}
       <label for="f-name">Nome do produto</label>
       <input type="text" id="f-name" placeholder="ex: Gloss Cereja" required>
 
-      <div class="grid-2">
-        <div>
-          <label for="f-price">Preço</label>
-          <div class="price-wrap">
-            <input type="text" id="f-price" placeholder="R$7,99" required>
-          </div>
+      <label for="f-price">Preço</label>
+      <div class="price-wrap">
+        <input type="text" id="f-price" placeholder="R$7,99" required>
+      </div>
+
+      <label style="margin-top:14px">Foto do produto</label>
+      <div class="img-row" style="margin-top:0">
+        <div class="col">
+          <label class="btn btn-ghost" for="f-file" style="width:100%;justify-content:center;padding:14px 10px">📷 Escolher / tirar foto</label>
+          <input type="file" id="f-file" accept="image/*" capture="environment">
+          <p class="hint" id="f-file-hint">A foto é salva automaticamente junto com o produto. Não precisa digitar nome de arquivo nem subir nada em outro lugar.</p>
+          <details style="margin-top:10px">
+            <summary style="cursor:pointer;font-size:0.74rem;color:var(--muted);font-weight:700">a imagem já está na pasta do site? (opção avançada)</summary>
+            <label for="f-image" style="margin-top:10px">Nome do arquivo da imagem</label>
+            <input type="text" id="f-image" placeholder="ex: GlossCereja.jpg">
+          </details>
         </div>
-        <div>
-          <label for="f-image">Nome do arquivo da imagem</label>
-          <input type="text" id="f-image" placeholder="ex: GlossCereja.jpg">
-        </div>
+        <div class="img-preview" id="f-preview">sem imagem</div>
       </div>
 
       <label for="f-desc">Descrição</label>
       <textarea id="f-desc" placeholder="ex: Gloss volumoso com brilho intenso e cheirinho de cereja."></textarea>
-
-      <div class="img-row">
-        <div class="col">
-          <label style="margin-top:0">Ou envie uma foto do dispositivo</label>
-          <input type="file" id="f-file" accept="image/*" style="display:block;font-size:0.8rem">
-          <p class="hint">Ao enviar uma foto aqui, ela é salva junto com o produto (não precisa subir arquivo separado). Se preferir, use o campo de nome de arquivo acima, caso as fotos já estejam na pasta do site.</p>
-        </div>
-        <div class="img-preview" id="f-preview">sem imagem</div>
-      </div>
 
       <div class="form-actions">
         <button type="button" class="btn-ghost" id="btn-cancel-edit" style="display:none">cancelar edição</button>
@@ -221,27 +242,46 @@ textarea{resize:vertical;min-height:64px}
 
 <script>
 const STORAGE_KEY = 'beleza699_produtos_admin';
+const GH_TOKEN_KEY = 'beleza699_gh_token';
+const GH_OWNER = 'beleza699';
+const GH_REPO = 'beleze699oficial';
+const GH_FILE = 'produtos.json';
+let ghBranch = null; // detectado automaticamente na primeira publicação
+let publishing = false;
+
 let produtos = [];
 let editingId = null;
-let uploadedImageData = null; // base64 data URI da foto enviada no form atual
+let uploadedImageData = null; // base64 (data URI) da foto enviada no form atual
+
+/* ── CATÁLOGO EMBUTIDO (plano B) ──
+   Cópia do produtos.json direto no código, igual ao index.html. Garante
+   que o Painel Admin sempre tenha algo pra mostrar mesmo se o
+   produtos.json não estiver acessível no servidor. */
+const PRODUTOS_PADRAO = [{"id":1,"name":"Blush Líquido","price":"R$7,99","image":"BlushLiquido.jpg","description":""},{"id":2,"name":"Modelador de Cachos","price":"R$9,99","image":"Modelador.jpg","description":""},{"id":3,"name":"Esfoliante Labial","price":"R$7,99","image":"EsfolianteLabial.jpg","description":""},{"id":4,"name":"Sombra Líquida","price":"R$7,99","image":"SombraLiquida.jpg","description":""},{"id":5,"name":"Gloss Sarah's Beauty","price":"R$7,99","image":"GlossSara.png","description":""},{"id":6,"name":"Kit 3 Pentes","price":"R$7,99","image":"KitPente.jpg","description":""},{"id":7,"name":"Touca de Cetim","price":"R$7,99","image":"Touca.jpg","description":""},{"id":8,"name":"Gloss de Mel","price":"R$7,99","image":"GlossMel.jpg","description":""},{"id":9,"name":"Gloss Super Pink","price":"R$7,99","image":"GlossSuperPink.png","description":""},{"id":10,"name":"Pó Compacto","price":"R$7,99","image":"pocompacto.png","description":""},{"id":11,"name":"Lip Bunny Triple ✨ Lançamento","price":"R$45,00","image":"LipBunny.png","description":""},{"id":12,"name":"Blush Cremoso","price":"R$7,99","image":"brushcr.png","description":""},{"id":13,"name":"Kit Navalha","price":"R$7,99","image":"Navalha.jpg","description":""},{"id":14,"name":"Presilhas de Flor","price":"R$7,99","image":"PresilhasFlor.jpg","description":""},{"id":15,"name":"Sabonete Líquido Facial","price":"R$7,99","image":"Saboneteliquido.jpg","description":""},{"id":16,"name":"Curvex","price":"R$6,99","image":"Curvex.jpg","description":""},{"id":17,"name":"Delineador Ruby Rose","price":"R$7,99","image":"Delineador.jpg","description":""},{"id":18,"name":"Rímel Colossal","price":"R$7,99","image":"Rimel.jpg","description":""},{"id":19,"name":"Pó Solto Efeito Blindagem","price":"R$7,99","image":"PoFacial.jpg","description":""},{"id":20,"name":"Pó Tapioca","price":"R$7,99","image":"PoTapioca.jpg","description":""},{"id":21,"name":"Rímel Incolor","price":"R$7,99","image":"RimelIncolor.jpg","description":""},{"id":22,"name":"Tiara Esportiva","price":"R$6,99","image":"Tiara.jpg","description":""},{"id":23,"name":"Kit  3 Presilhas Estrela","price":"R$6,99","image":"KitEstrelas.jpg","description":""},{"id":24,"name":"Body Splash","price":"R$8,99","image":"BodySplash.jpg","description":""},{"id":25,"name":"Faixa de Cabelo Sortida","price":"R$6,99","image":"FaixaColorida.png","description":""},{"id":26,"name":"Pó Banana","price":"R$7,99","image":"PoBanana.jpg","description":""},{"id":27,"name":"Adstringente / Tônico / Água Micelar","price":"R$7,99","image":"Ads.jpg","description":""},{"id":28,"name":"Xuxinha Metalizada","price":"R$6,99","image":"XuxaMetal.png","description":""},{"id":29,"name":"Kit Liguinha","price":"R$7,99","image":"KitLiguinha.jpg","description":""},{"id":30,"name":"Lip Honey","price":"R$25,00","image":"LipHoney.png","description":""},{"id":31,"name":"Espelho","price":"R$15,00","image":"Espelho.jpg","description":""},{"id":32,"name":"Kit Pincel","price":"R$25,00","image":"pincel.jpg","description":""},{"id":33,"name":"Pó Compacto Ruby Rose","price":"R$7,99","image":"PoRuby.png","description":""},{"id":34,"name":"Base Matte","price":"R$7,99","image":"base2.jpg","description":""},{"id":35,"name":"Corretivo","price":"R$7,99","image":"Corretivo.jpg","description":""},{"id":36,"name":"Base Adversa","price":"R$7,99","image":"Base.jpg","description":""},{"id":37,"name":"Delineador de Silicone","price":"R$6,99","image":"DelineadorSilicone.jpg","description":""},{"id":38,"name":"Lenço Umedecido","price":"R$7,99","image":"Lenço.jpg","description":""},{"id":39,"name":"Lápis de Olho Marrom/Preto","price":"R$6,99","image":"LapisOlho.jpg","description":""},{"id":40,"name":"Iluminador Líquido","price":"R$7,99","image":"Iluminador.jpg","description":""},{"id":41,"name":"Cola de Cílios","price":"R$6,99","image":"ColaCilios.jpg","description":""},{"id":42,"name":"Cílios Postiços Sabrina Sato","price":"R$7,99","image":"Cilios.jpg","description":""},{"id":43,"name":"Kit Esponjas","price":"R$6,99","image":"KitEsponja.jpg","description":""},{"id":44,"name":"Lápis de Boca","price":"R$6,99","image":"LapisBoca.png","description":""},{"id":45,"name":"Pó facial de Rosa Mosqueta","price":"R$7,99","image":"PoRosa.jpg","description":""},{"id":46,"name":"Bolsa Baguete","price":"R$34,99","image":"Bolsa.png","description":""},{"id":47,"name":"Esfoliante de Corpo","price":"R$8,99","image":"EsfolianteCorpo.png","description":""},{"id":48,"name":"Xuxa de Cetim","price":"R$6,99","image":"XuxaCetim.jpg","description":""}];
 
 /* ---------- CARREGAR DADOS ---------- */
 function loadProdutos() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
-      produtos = JSON.parse(saved);
-      renderCatalog();
-      updateSyncBadge();
-      return;
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length) {
+        produtos = parsed;
+        renderCatalog();
+        updateSyncBadge();
+        return;
+      }
     } catch (e) { /* segue para o fetch */ }
   }
   fetch('produtos.json', { cache: 'no-store' })
-    .then(r => r.json())
-    .then(data => { produtos = data; renderCatalog(); updateSyncBadge(); })
+    .then(r => { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
+    .then(data => {
+      produtos = (Array.isArray(data) && data.length) ? data : PRODUTOS_PADRAO;
+      renderCatalog();
+      updateSyncBadge();
+    })
     .catch(() => {
-      showToast('Não encontrei produtos.json — comece adicionando produtos abaixo.');
-      produtos = [];
+      produtos = PRODUTOS_PADRAO;
       renderCatalog();
       updateSyncBadge();
     });
@@ -250,21 +290,138 @@ function loadProdutos() {
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(produtos));
   updateSyncBadge();
+  publishToGitHub();
 }
 
-function updateSyncBadge() {
+function hasGhToken() { return !!localStorage.getItem(GH_TOKEN_KEY); }
+
+function updateSyncBadge(state) {
   const el = document.getElementById('sync-status');
   const info = document.getElementById('toolbar-info');
-  const hasLocal = !!localStorage.getItem(STORAGE_KEY);
-  if (hasLocal) {
+
+  if (state === 'publishing') {
+    el.className = 'sync warn';
+    el.innerHTML = '<span class="dot"></span> Publicando no site…';
+    info.textContent = 'Pode levar até 1 minuto pra aparecer pra todo mundo depois de publicar.';
+    return;
+  }
+  if (state === 'published') {
     el.className = 'sync';
-    el.innerHTML = '<span class="dot"></span> Conectado ao site — o que você editar aqui já aparece no index.html neste mesmo navegador.';
-    info.textContent = 'Para que as mudanças apareçam para todo mundo (não só neste navegador), clique em "Baixar produtos.json" e substitua o arquivo no seu site/repositório.';
+    el.innerHTML = '<span class="dot"></span> Publicado! ✅ Já está sendo enviado para o site.';
+    info.textContent = 'Pode levar até 1 minuto pra aparecer no site pra todo mundo.';
+    return;
+  }
+  if (state === 'error') {
+    el.className = 'sync err';
+    el.innerHTML = '<span class="dot"></span> Não consegui publicar automaticamente.';
+    info.textContent = 'Verifique o token em "🔑 Publicação automática", ou baixe o produtos.json e envie manualmente.';
+    return;
+  }
+
+  if (hasGhToken()) {
+    el.className = 'sync';
+    el.innerHTML = '<span class="dot"></span> Publicação automática conectada.';
+    info.textContent = 'Tudo que você salvar aqui é enviado direto para o site.';
   } else {
     el.className = 'sync warn';
-    el.innerHTML = '<span class="dot"></span> Mostrando o catálogo publicado (produtos.json) — ainda sem alterações locais.';
-    info.textContent = 'Adicione, edite ou remova produtos abaixo. As mudanças ficam salvas neste navegador até você baixar o produtos.json atualizado.';
+    el.innerHTML = '<span class="dot"></span> Salvando só neste navegador.';
+    info.textContent = 'Configure "🔑 Publicação automática" pra que as mudanças apareçam pra todo mundo sozinhas — ou baixe o produtos.json e envie manualmente.';
   }
+}
+
+/* ---------- PUBLICAÇÃO AUTOMÁTICA NO GITHUB ---------- */
+function utf8ToBase64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+async function ghFetch(url, options = {}) {
+  const token = localStorage.getItem(GH_TOKEN_KEY);
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Accept': 'application/vnd.github+json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+      ...(options.headers || {})
+    }
+  });
+}
+
+async function detectBranch() {
+  if (ghBranch) return ghBranch;
+  const res = await ghFetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}`);
+  if (!res.ok) throw new Error('Não consegui acessar o repositório (status ' + res.status + ')');
+  const data = await res.json();
+  ghBranch = data.default_branch || 'main';
+  return ghBranch;
+}
+
+async function publishToGitHub() {
+  if (!hasGhToken() || publishing) return;
+  publishing = true;
+  updateSyncBadge('publishing');
+  try {
+    const branch = await detectBranch();
+    const contentsUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
+
+    let sha;
+    const cur = await ghFetch(`${contentsUrl}?ref=${branch}`);
+    if (cur.ok) {
+      const curData = await cur.json();
+      sha = curData.sha;
+    } else if (cur.status !== 404) {
+      throw new Error('Não consegui checar o arquivo atual (status ' + cur.status + ')');
+    }
+
+    const body = {
+      message: 'Atualiza catálogo via Painel Admin',
+      content: utf8ToBase64(JSON.stringify(produtos, null, 2)),
+      branch
+    };
+    if (sha) body.sha = sha;
+
+    const put = await ghFetch(contentsUrl, { method: 'PUT', body: JSON.stringify(body) });
+    if (!put.ok) {
+      const errData = await put.json().catch(() => ({}));
+      throw new Error(errData.message || ('status ' + put.status));
+    }
+
+    updateSyncBadge('published');
+    showToast('✅ Catálogo publicado no site!');
+  } catch (err) {
+    console.error('Falha ao publicar no GitHub:', err);
+    updateSyncBadge('error');
+    showToast('⚠️ Não consegui publicar automaticamente — confira o token.');
+  } finally {
+    publishing = false;
+  }
+}
+
+/* ---------- COMPRIMIR FOTO (deixa o arquivo leve o suficiente pra publicar) ---------- */
+function compressImage(file, maxDim = 720, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Não consegui ler a foto.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Arquivo de imagem inválido.'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+          else { width = Math.round(width * (maxDim / height)); height = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff'; // fundo branco (JPEG não tem transparência)
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 /* ---------- HELPERS ---------- */
@@ -344,18 +501,65 @@ document.getElementById('f-image').addEventListener('input', e => {
   updatePreviewFromUrl(e.target.value.trim());
 });
 
-document.getElementById('f-file').addEventListener('change', e => {
+document.getElementById('f-file').addEventListener('change', async e => {
   const file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    uploadedImageData = reader.result; // data URI
+  const hint = document.getElementById('f-file-hint');
+  const box = document.getElementById('f-preview');
+  hint.textContent = 'Preparando a foto…';
+  try {
+    uploadedImageData = await compressImage(file);
     document.getElementById('f-image').value = '';
-    const box = document.getElementById('f-preview');
     box.style.backgroundImage = `url('${uploadedImageData}')`;
     box.textContent = '';
-  };
-  reader.readAsDataURL(file);
+    hint.textContent = 'Foto pronta! Ela é salva automaticamente junto com o produto.';
+  } catch (err) {
+    hint.textContent = 'Não consegui usar essa foto — tente outra.';
+    console.error(err);
+  }
+});
+
+/* ---------- CONFIGURAÇÃO DE PUBLICAÇÃO AUTOMÁTICA (GITHUB) ---------- */
+const ghConfigBox = document.getElementById('gh-config-box');
+document.getElementById('btn-gh-config').addEventListener('click', () => {
+  const open = ghConfigBox.style.display !== 'none';
+  ghConfigBox.style.display = open ? 'none' : 'block';
+  if (!open) {
+    document.getElementById('gh-token').value = localStorage.getItem(GH_TOKEN_KEY) || '';
+    ghConfigBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+});
+
+document.getElementById('btn-gh-save').addEventListener('click', async () => {
+  const token = document.getElementById('gh-token').value.trim();
+  const msg = document.getElementById('gh-msg');
+  msg.className = 'msg'; msg.textContent = '';
+  if (!token) {
+    msg.className = 'msg err';
+    msg.textContent = 'Cole o token antes de salvar.';
+    return;
+  }
+  localStorage.setItem(GH_TOKEN_KEY, token);
+  msg.className = 'msg ok';
+  msg.textContent = 'Verificando acesso…';
+  try {
+    ghBranch = null;
+    await detectBranch();
+    msg.className = 'msg ok';
+    msg.textContent = '✓ Conectado! A partir de agora, tudo que você salvar é publicado automaticamente.';
+    updateSyncBadge();
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = 'Token salvo, mas não consegui acessar o repositório. Confira as permissões (Contents: Read and write) e o nome do repositório.';
+  }
+});
+
+document.getElementById('btn-gh-remove').addEventListener('click', () => {
+  localStorage.removeItem(GH_TOKEN_KEY);
+  document.getElementById('gh-token').value = '';
+  document.getElementById('gh-msg').className = 'msg';
+  showToast('Token removido. Publicação automática desligada.');
+  updateSyncBadge();
 });
 
 /* ---------- FORM: ADICIONAR / SALVAR EDIÇÃO ---------- */
@@ -428,6 +632,7 @@ function resetForm() {
   document.getElementById('product-form').reset();
   document.getElementById('f-preview').style.backgroundImage = '';
   document.getElementById('f-preview').textContent = 'sem imagem';
+  document.getElementById('f-file-hint').textContent = 'A foto é salva automaticamente junto com o produto. Não precisa digitar nome de arquivo nem subir nada em outro lugar.';
   document.getElementById('form-title').textContent = 'Novo produto';
   document.getElementById('form-sub').textContent = 'Preencha os dados e clique em adicionar.';
   document.getElementById('btn-submit').textContent = '✨ Adicionar produto';
@@ -471,16 +676,6 @@ document.getElementById('btn-copy').addEventListener('click', () => {
   navigator.clipboard.writeText(text)
     .then(() => showToast('JSON copiado! Cole no produtos.json do site.'))
     .catch(() => showToast('Não foi possível copiar automaticamente.'));
-});
-
-document.getElementById('btn-reset-local').addEventListener('click', () => {
-  if (!confirm('Isso descarta as alterações salvas neste navegador e recarrega o produtos.json publicado. Continuar?')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  resetForm();
-  fetch('produtos.json', { cache: 'no-store' })
-    .then(r => r.json())
-    .then(data => { produtos = data; renderCatalog(); updateSyncBadge(); showToast('Catálogo publicado recarregado.'); })
-    .catch(() => { produtos = []; renderCatalog(); updateSyncBadge(); showToast('Não encontrei produtos.json.'); });
 });
 
 document.getElementById('import-file').addEventListener('change', e => {
