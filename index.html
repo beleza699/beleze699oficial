@@ -1036,21 +1036,14 @@ const CAT_MAP = {
 };
 let cart = [];
 
-/* ── CARREGAR PRODUTOS (primeiro tenta o que foi salvo no Painel Admin, senão busca produtos.json) ── */
-const ADMIN_STORAGE_KEY = 'beleza699_produtos_admin';
+/* ── CARREGAR PRODUTOS (sempre busca a versão publicada mais recente) ── */
 
 async function loadProducts() {
   const grid = document.getElementById('product-grid');
   try {
-    let produtos;
-    const local = localStorage.getItem(ADMIN_STORAGE_KEY);
-    if (local) {
-      produtos = JSON.parse(local);
-    } else {
-      const res = await fetch('produtos.json?t=' + Date.now());
-      if (!res.ok) throw new Error('Falha ao carregar produtos.json');
-      produtos = await res.json();
-    }
+    const res = await fetch('produtos.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('Falha ao carregar produtos.json');
+    const produtos = await res.json();
 
     grid.innerHTML = '';
     produtos.forEach(p => {
@@ -1315,11 +1308,6 @@ function showToast(msg) {
 
 renderCart();
 loadProducts();
-
-/* ── ATUALIZA A VITRINE SE O ADMIN EDITAR O CATÁLOGO EM OUTRA ABA ── */
-window.addEventListener('storage', e => {
-  if (e.key === ADMIN_STORAGE_KEY) loadProducts();
-});
 </script>
 </body>
 </html>
