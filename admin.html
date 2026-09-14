@@ -159,33 +159,11 @@ textarea{resize:vertical;min-height:64px}
       <div class="toolbar-info" id="toolbar-info"></div>
     </div>
     <div class="toolbar-actions">
-      <button class="btn-ghost" id="btn-gh-config" type="button">🔑 Publicação automática</button>
       <label class="btn btn-ghost" for="import-file">↑ Importar JSON</label>
       <input type="file" id="import-file" accept="application/json">
       <button class="btn-ghost" id="btn-copy" type="button">⧉ Copiar JSON</button>
       <button class="btn-primary" id="btn-download" type="button">⬇ Baixar produtos.json</button>
     </div>
-  </div>
-
-  <div class="box" id="gh-config-box" style="display:none">
-    <h2>🔑 Publicação automática no site</h2>
-    <div class="sub">Conecte uma vez só. Depois disso, todo produto que você adicionar, editar ou remover aqui é publicado direto no site — sem precisar baixar nem subir arquivo.</div>
-
-    <label for="gh-token" style="margin-top:0">Token de acesso do GitHub</label>
-    <input type="text" id="gh-token" placeholder="cole aqui o token (começa com ghp_ ou github_pat_)" autocomplete="off">
-    <p class="hint">
-      <strong>Como criar o token (uma vez só):</strong><br>
-      1. Acesse <strong>github.com/settings/personal-access-tokens/new</strong><br>
-      2. Em "Repository access" escolha "Only select repositories" → selecione <strong>beleze699oficial</strong><br>
-      3. Em "Permissions" → "Repository permissions" → mude "Contents" para <strong>Read and write</strong><br>
-      4. Clique em "Generate token", copie e cole aqui.<br>
-      O token fica guardado só neste navegador/celular — se usar outro aparelho, precisa configurar de novo lá também.
-    </p>
-    <div class="form-actions">
-      <button type="button" class="btn-danger" id="btn-gh-remove">remover token</button>
-      <button type="button" class="btn-primary" id="btn-gh-save">✓ salvar e conectar</button>
-    </div>
-    <div class="msg" id="gh-msg"></div>
   </div>
 
   <div class="box">
@@ -242,7 +220,16 @@ textarea{resize:vertical;min-height:64px}
 
 <script>
 const STORAGE_KEY = 'beleza699_produtos_admin';
-const GH_TOKEN_KEY = 'beleza699_gh_token';
+/* ── TOKEN DE PUBLICAÇÃO (fixo no código, igual em qualquer aparelho) ──
+   ATENÇÃO: qualquer pessoa que abrir esta página e olhar o código-fonte
+   consegue ver este token e usá-lo para alterar o repositório abaixo.
+   Por isso é essencial criar um token com o MENOR acesso possível:
+   github.com/settings/personal-access-tokens/new →
+   "Only select repositories" → escolha só o repo do site →
+   "Repository permissions" → "Contents" = Read and write (nada além disso).
+   Se algum dia esse token vazar ou você quiser trocar, gere um novo no
+   GitHub, revogue o antigo e cole o novo aqui. */
+const GH_TOKEN = 'COLE_SEU_TOKEN_AQUI';
 const GH_OWNER = 'beleza699';
 const GH_REPO = 'beleze699oficial';
 const GH_FILE = 'produtos.json';
@@ -293,7 +280,7 @@ function persist() {
   publishToGitHub();
 }
 
-function hasGhToken() { return !!localStorage.getItem(GH_TOKEN_KEY); }
+function hasGhToken() { return !!GH_TOKEN && GH_TOKEN !== 'COLE_SEU_TOKEN_AQUI'; }
 
 function updateSyncBadge(state) {
   const el = document.getElementById('sync-status');
@@ -314,18 +301,18 @@ function updateSyncBadge(state) {
   if (state === 'error') {
     el.className = 'sync err';
     el.innerHTML = '<span class="dot"></span> Não consegui publicar automaticamente.';
-    info.textContent = 'Verifique o token em "🔑 Publicação automática", ou baixe o produtos.json e envie manualmente.';
+    info.textContent = 'Confira se o token colado no código ainda é válido, ou baixe o produtos.json e envie manualmente.';
     return;
   }
 
   if (hasGhToken()) {
     el.className = 'sync';
     el.innerHTML = '<span class="dot"></span> Publicação automática conectada.';
-    info.textContent = 'Tudo que você salvar aqui é enviado direto para o site.';
+    info.textContent = 'Tudo que você salvar aqui — em qualquer aparelho — é enviado direto para o site.';
   } else {
     el.className = 'sync warn';
     el.innerHTML = '<span class="dot"></span> Salvando só neste navegador.';
-    info.textContent = 'Configure "🔑 Publicação automática" pra que as mudanças apareçam pra todo mundo sozinhas — ou baixe o produtos.json e envie manualmente.';
+    info.textContent = 'Cole o token no código (constante GH_TOKEN) pra que as mudanças apareçam pra todo mundo sozinhas — ou baixe o produtos.json e envie manualmente.';
   }
 }
 
@@ -335,12 +322,11 @@ function utf8ToBase64(str) {
 }
 
 async function ghFetch(url, options = {}) {
-  const token = localStorage.getItem(GH_TOKEN_KEY);
   return fetch(url, {
     ...options,
     headers: {
       'Accept': 'application/vnd.github+json',
-      ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+      ...(hasGhToken() ? { 'Authorization': 'Bearer ' + GH_TOKEN } : {}),
       ...(options.headers || {})
     }
   });
@@ -517,49 +503,6 @@ document.getElementById('f-file').addEventListener('change', async e => {
     hint.textContent = 'Não consegui usar essa foto — tente outra.';
     console.error(err);
   }
-});
-
-/* ---------- CONFIGURAÇÃO DE PUBLICAÇÃO AUTOMÁTICA (GITHUB) ---------- */
-const ghConfigBox = document.getElementById('gh-config-box');
-document.getElementById('btn-gh-config').addEventListener('click', () => {
-  const open = ghConfigBox.style.display !== 'none';
-  ghConfigBox.style.display = open ? 'none' : 'block';
-  if (!open) {
-    document.getElementById('gh-token').value = localStorage.getItem(GH_TOKEN_KEY) || '';
-    ghConfigBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-});
-
-document.getElementById('btn-gh-save').addEventListener('click', async () => {
-  const token = document.getElementById('gh-token').value.trim();
-  const msg = document.getElementById('gh-msg');
-  msg.className = 'msg'; msg.textContent = '';
-  if (!token) {
-    msg.className = 'msg err';
-    msg.textContent = 'Cole o token antes de salvar.';
-    return;
-  }
-  localStorage.setItem(GH_TOKEN_KEY, token);
-  msg.className = 'msg ok';
-  msg.textContent = 'Verificando acesso…';
-  try {
-    ghBranch = null;
-    await detectBranch();
-    msg.className = 'msg ok';
-    msg.textContent = '✓ Conectado! A partir de agora, tudo que você salvar é publicado automaticamente.';
-    updateSyncBadge();
-  } catch (err) {
-    msg.className = 'msg err';
-    msg.textContent = 'Token salvo, mas não consegui acessar o repositório. Confira as permissões (Contents: Read and write) e o nome do repositório.';
-  }
-});
-
-document.getElementById('btn-gh-remove').addEventListener('click', () => {
-  localStorage.removeItem(GH_TOKEN_KEY);
-  document.getElementById('gh-token').value = '';
-  document.getElementById('gh-msg').className = 'msg';
-  showToast('Token removido. Publicação automática desligada.');
-  updateSyncBadge();
 });
 
 /* ---------- FORM: ADICIONAR / SALVAR EDIÇÃO ---------- */
