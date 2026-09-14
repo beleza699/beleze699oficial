@@ -184,8 +184,10 @@ textarea{resize:vertical;min-height:64px}
     <div class="form-actions">
       <button type="button" class="btn-danger" id="btn-gh-remove">remover token</button>
       <button type="button" class="btn-primary" id="btn-gh-save">✓ salvar e conectar</button>
+      <button type="button" class="btn-ghost" id="btn-gh-test">🔍 Testar conexão</button>
     </div>
     <div class="msg" id="gh-msg"></div>
+    <pre id="gh-detail" style="display:none;white-space:pre-wrap;background:#fff0f2;color:#c0264a;border-radius:12px;padding:10px 12px;font-size:0.72rem;margin-top:10px;border:1px solid #ffb9c7"></pre>
   </div>
 
   <div class="box">
@@ -295,7 +297,7 @@ function persist() {
 
 function hasGhToken() { return !!localStorage.getItem(GH_TOKEN_KEY); }
 
-function updateSyncBadge(state) {
+function updateSyncBadge(state, detailMsg) {
   const el = document.getElementById('sync-status');
   const info = document.getElementById('toolbar-info');
 
@@ -314,7 +316,8 @@ function updateSyncBadge(state) {
   if (state === 'error') {
     el.className = 'sync err';
     el.innerHTML = '<span class="dot"></span> Não consegui publicar automaticamente.';
-    info.textContent = 'Verifique o token em "🔑 Publicação automática", ou baixe o produtos.json e envie manualmente.';
+    info.innerHTML = 'Motivo: <strong>' + escapeHtml(detailMsg || 'erro desconhecido').replace(/\n/g,'<br>') +
+      '</strong><br>Clique em "🔑 Publicação automática" → "🔍 Testar conexão" para diagnosticar, ou baixe o produtos.json e envie manualmente.';
     return;
   }
 
@@ -349,10 +352,53 @@ async function ghFetch(url, options = {}) {
 async function detectBranch() {
   if (ghBranch) return ghBranch;
   const res = await ghFetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}`);
-  if (!res.ok) throw new Error('Não consegui acessar o repositório (status ' + res.status + ')');
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error('Não consegui acessar o repositório (status ' + res.status + (d.message ? ': ' + d.message : '') + ')');
+  }
   const data = await res.json();
   ghBranch = data.default_branch || 'main';
   return ghBranch;
+}
+
+/* Faz um único PUT do produtos.json, buscando o sha mais recente.
+   attempt=2 evita loop infinito se ficar em conflito de novo. */
+async function putProdutosJson(attempt = 1) {
+  const branch = await detectBranch();
+  const contentsUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
+
+  let sha;
+  const cur = await ghFetch(`${contentsUrl}?ref=${branch}`);
+  if (cur.ok) {
+    const curData = await cur.json();
+    sha = curData.sha;
+  } else if (cur.status !== 404) {
+    const d = await cur.json().catch(() => ({}));
+    const err = new Error('Não consegui checar o arquivo atual (status ' + cur.status + (d.message ? ': ' + d.message : '') + ')');
+    err.status = cur.status;
+    throw err;
+  }
+
+  const body = {
+    message: 'Atualiza catálogo via Painel Admin',
+    content: utf8ToBase64(JSON.stringify(produtos, null, 2)),
+    branch
+  };
+  if (sha) body.sha = sha;
+
+  const put = await ghFetch(contentsUrl, { method: 'PUT', body: JSON.stringify(body) });
+  if (!put.ok) {
+    const errData = await put.json().catch(() => ({}));
+    // 409 = conflito de sha (alguém/algo mudou o arquivo entre o GET e o PUT).
+    // Em vez de falhar, busca o sha novo e tenta de novo uma vez.
+    const isShaConflict = (put.status === 409) || /does not match|sha/i.test(errData.message || '');
+    if (isShaConflict && attempt < 2) {
+      return putProdutosJson(attempt + 1);
+    }
+    const err = new Error(errData.message || ('status ' + put.status));
+    err.status = put.status;
+    throw err;
+  }
 }
 
 async function publishToGitHub() {
@@ -360,41 +406,71 @@ async function publishToGitHub() {
   publishing = true;
   updateSyncBadge('publishing');
   try {
-    const branch = await detectBranch();
-    const contentsUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
-
-    let sha;
-    const cur = await ghFetch(`${contentsUrl}?ref=${branch}`);
-    if (cur.ok) {
-      const curData = await cur.json();
-      sha = curData.sha;
-    } else if (cur.status !== 404) {
-      throw new Error('Não consegui checar o arquivo atual (status ' + cur.status + ')');
-    }
-
-    const body = {
-      message: 'Atualiza catálogo via Painel Admin',
-      content: utf8ToBase64(JSON.stringify(produtos, null, 2)),
-      branch
-    };
-    if (sha) body.sha = sha;
-
-    const put = await ghFetch(contentsUrl, { method: 'PUT', body: JSON.stringify(body) });
-    if (!put.ok) {
-      const errData = await put.json().catch(() => ({}));
-      throw new Error(errData.message || ('status ' + put.status));
-    }
-
+    await putProdutosJson();
     updateSyncBadge('published');
     showToast('✅ Catálogo publicado no site!');
   } catch (err) {
     console.error('Falha ao publicar no GitHub:', err);
-    updateSyncBadge('error');
-    showToast('⚠️ Não consegui publicar automaticamente — confira o token.');
+    let extra = '';
+    if (err.status === 401) extra = 'O token é inválido ou expirou. Gere um novo token.';
+    else if (err.status === 403) extra = 'O token não tem permissão de escrita neste repositório. Confira "Contents: Read and write" na criação do token, e se o repositório selecionado é o correto (' + GH_OWNER + '/' + GH_REPO + ').';
+    else if (err.status === 404) extra = 'Repositório ou arquivo não encontrado. Confira se o nome do repositório e da conta estão certos (' + GH_OWNER + '/' + GH_REPO + ').';
+    else if (err.status === 422 || err.status === 409) extra = 'Conflito ao salvar (o arquivo mudou entre a leitura e a escrita). Tente salvar de novo.';
+    updateSyncBadge('error', err.message + (extra ? '\n\n' + extra : ''));
+    showToast('⚠️ Não consegui publicar automaticamente — veja os detalhes no painel.');
   } finally {
     publishing = false;
   }
 }
+
+/* ---------- TESTAR CONEXÃO (diagnóstico manual, sem precisar salvar produto) ---------- */
+document.getElementById('btn-gh-test').addEventListener('click', async () => {
+  const msg = document.getElementById('gh-msg');
+  const detail = document.getElementById('gh-detail');
+  const token = document.getElementById('gh-token').value.trim();
+  detail.style.display = 'none';
+  if (!token) {
+    msg.className = 'msg err';
+    msg.textContent = 'Cole o token antes de testar.';
+    return;
+  }
+  localStorage.setItem(GH_TOKEN_KEY, token);
+  msg.className = 'msg ok';
+  msg.textContent = 'Testando conexão…';
+  const log = [];
+  try {
+    log.push('1) Verificando repositório ' + GH_OWNER + '/' + GH_REPO + '…');
+    ghBranch = null;
+    const branch = await detectBranch();
+    log.push('   ✓ Repositório encontrado. Branch padrão: ' + branch);
+
+    log.push('2) Verificando acesso ao arquivo ' + GH_FILE + '…');
+    const contentsUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}?ref=${branch}`;
+    const cur = await ghFetch(contentsUrl);
+    if (cur.ok) {
+      log.push('   ✓ Arquivo encontrado e legível.');
+    } else if (cur.status === 404) {
+      log.push('   ⚠ Arquivo não existe ainda no repositório — será criado ao salvar.');
+    } else {
+      const d = await cur.json().catch(() => ({}));
+      log.push('   ✗ Erro ao ler o arquivo (status ' + cur.status + (d.message ? ': ' + d.message : '') + ')');
+    }
+
+    log.push('3) Testando permissão de escrita (commit de teste)…');
+    await putProdutosJson();
+    log.push('   ✓ Consegui gravar no repositório com sucesso!');
+
+    msg.className = 'msg ok';
+    msg.textContent = '✓ Tudo certo! A publicação automática está funcionando.';
+    updateSyncBadge();
+  } catch (err) {
+    log.push('   ✗ ' + err.message);
+    msg.className = 'msg err';
+    msg.textContent = 'Encontrei um problema — veja os detalhes abaixo.';
+  }
+  detail.textContent = log.join('\n');
+  detail.style.display = 'block';
+});
 
 /* ---------- COMPRIMIR FOTO (deixa o arquivo leve o suficiente pra publicar) ---------- */
 function compressImage(file, maxDim = 720, quality = 0.72) {
