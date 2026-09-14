@@ -721,42 +721,6 @@ padding:52px 24px 32px:
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════════════════════
-     BANCO DE DADOS (Firebase Firestore) — mesmo firebaseConfig do admin.html.
-════════════════════════════════════════════════════════════ -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import {
-    getFirestore, collection, onSnapshot, query, orderBy
-  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "COLE_AQUI",
-    authDomain: "COLE_AQUI",
-    projectId: "COLE_AQUI",
-    storageBucket: "COLE_AQUI",
-    messagingSenderId: "COLE_AQUI",
-    appId: "COLE_AQUI"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const produtosCol = collection(db, "produtos");
-
-  window.ProdutosDB = {
-    listen(onData, onError) {
-      return onSnapshot(query(produtosCol, orderBy("id")), snap => {
-        onData(snap.docs.map(d => d.data()));
-      }, err => {
-        console.error("Firestore erro:", err);
-        if (onError) onError(err);
-      });
-    }
-  };
-
-  window.dispatchEvent(new Event('produtosdb-ready'));
-</script>
-
 <!-- ANNOUNCE -->
 <div class="announce">🌸 Novidade: Lip Bunny Triple chegou! &nbsp;|&nbsp; Cosméticos a partir de R$6,99 💕</div>
 
@@ -1074,50 +1038,44 @@ let cart = [];
 
 /* ── CARREGAR PRODUTOS (sempre busca a versão publicada mais recente) ── */
 
-function loadProducts() {
-  window.ProdutosDB.listen(
-    produtos => renderProductGrid(produtos),
-    err => {
-      const grid = document.getElementById('product-grid');
-      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 0;">Não foi possível carregar os produtos agora. Tente recarregar a página. 🌸</p>';
-      console.error(err);
-    }
-  );
-}
-
-function renderProductGrid(produtos) {
+async function loadProducts() {
   const grid = document.getElementById('product-grid');
-  grid.innerHTML = '';
-  produtos.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.dataset.name = p.name;
-    card.dataset.price = p.price;
-    card.innerHTML =
-      '<div class="card-img-wrap"><img src="' + p.image + '" alt="' + p.name + '"></div>' +
-      '<div class="card-body">' +
-        '<h3>' + p.name + '</h3>' +
-        (p.description ? '<p class="card-desc">' + p.description + '</p>' : '') +
-        '<span class="price">' + p.price + '</span>' +
-        '<button class="btn-add-cart" onclick="addToCartFromCard(this)">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>' +
-          'Adicionar à Cesta' +
-        '</button>' +
-      '</div>';
-    grid.appendChild(card);
-  });
+  try {
+    const res = await fetch('produtos.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('Falha ao carregar produtos.json');
+    const produtos = await res.json();
 
-  let noResults = document.getElementById('no-results');
-  if (!noResults) {
-    noResults = document.createElement('div');
+    grid.innerHTML = '';
+    produtos.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.name = p.name;
+      card.dataset.price = p.price;
+      card.innerHTML =
+        '<div class="card-img-wrap"><img src="' + p.image + '" alt="' + p.name + '"></div>' +
+        '<div class="card-body">' +
+          '<h3>' + p.name + '</h3>' +
+          (p.description ? '<p class="card-desc">' + p.description + '</p>' : '') +
+          '<span class="price">' + p.price + '</span>' +
+          '<button class="btn-add-cart" onclick="addToCartFromCard(this)">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>' +
+            'Adicionar à Cesta' +
+          '</button>' +
+        '</div>';
+      grid.appendChild(card);
+    });
+
+    const noResults = document.createElement('div');
     noResults.id = 'no-results';
     noResults.textContent = 'Nenhum produto encontrado.';
     noResults.style.display = 'none';
     grid.parentElement.appendChild(noResults);
-  }
 
-  document.getElementById('res-count').textContent = produtos.length + ' produto' + (produtos.length !== 1 ? 's' : '');
-  applyFilters();
+    document.getElementById('res-count').textContent = produtos.length + ' produto' + (produtos.length !== 1 ? 's' : '');
+  } catch (err) {
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 0;">Não foi possível carregar os produtos agora. Tente recarregar a página. 🌸</p>';
+    console.error(err);
+  }
 }
 
 /* ── HAMBURGER MENU ── */
@@ -1349,8 +1307,7 @@ function showToast(msg) {
 }
 
 renderCart();
-if (window.ProdutosDB) loadProducts();
-else window.addEventListener('produtosdb-ready', loadProducts);
+loadProducts();
 </script>
 </body>
 </html>
