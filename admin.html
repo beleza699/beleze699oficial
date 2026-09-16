@@ -250,6 +250,7 @@ const GH_REPO = 'beleze699oficial';
 const GH_FILE = 'produtos.json';
 let ghBranch = null; // detectado automaticamente na primeira publicação
 let publishing = false;
+let lastPublishError = '';
 
 let produtos = [];
 let editingId = null;
@@ -347,7 +348,8 @@ function updateSyncBadge(state) {
   if (state === 'error') {
     el.className = 'sync err';
     el.innerHTML = '<span class="dot"></span> Não consegui publicar automaticamente.';
-    info.textContent = 'Verifique o token em "🔑 Publicação automática", ou baixe o produtos.json e envie manualmente.';
+    const detail = lastPublishError ? ` Detalhe: "${escapeHtml(lastPublishError)}"` : '';
+    info.textContent = 'Verifique o token em "🔑 Publicação automática", ou baixe o produtos.json e envie manualmente.' + detail;
     return;
   }
 
@@ -418,12 +420,14 @@ async function publishToGitHub() {
       throw new Error(errData.message || ('status ' + put.status));
     }
 
+    lastPublishError = '';
     updateSyncBadge('published');
     showToast('✅ Catálogo publicado no site!');
   } catch (err) {
     console.error('Falha ao publicar no GitHub:', err);
+    lastPublishError = err.message || String(err);
     updateSyncBadge('error');
-    showToast('⚠️ Não consegui publicar automaticamente — confira o token.');
+    showToast('⚠️ Falha ao publicar: ' + lastPublishError);
   } finally {
     publishing = false;
   }
