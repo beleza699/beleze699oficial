@@ -373,8 +373,12 @@ async function ghFetch(url, options = {}) {
   const token = localStorage.getItem(GH_TOKEN_KEY);
   return fetch(url, {
     ...options,
+    // Sem isso o navegador podia devolver uma resposta guardada em cache,
+    // com um "sha" velho — e aí o GitHub recusava a gravação com erro 409.
+    cache: 'no-store',
     headers: {
       'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json',
       ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
       ...(options.headers || {})
     }
@@ -384,8 +388,16 @@ async function ghFetch(url, options = {}) {
 async function detectBranch() {
   if (ghBranch) return ghBranch;
   const res = await ghFetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}`);
+  if (res.status === 401) throw new Error('Token inválido ou expirado (401). Gere um token novo no GitHub.');
+  if (res.status === 404) throw new Error('Repositório não encontrado (404). O token não tem acesso a "' + GH_OWNER + '/' + GH_REPO + '".');
   if (!res.ok) throw new Error('Não consegui acessar o repositório (status ' + res.status + ')');
   const data = await res.json();
+  // IMPORTANTE: ler o repositório NÃO garante que dá pra gravar nele.
+  // Sem essa checagem, um token só-leitura passava como "conectado" e só
+  // falhava na hora de salvar.
+  if (data.permissions && data.permissions.push === false) {
+    throw new Error('O token só tem permissão de leitura. Gere um token com "Contents: Read and write".');
+  }
   ghBranch = data.default_branch || 'main';
   return ghBranch;
 }
@@ -397,26 +409,40 @@ async function publishToGitHub() {
   try {
     const branch = await detectBranch();
     const contentsUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
+    const content = utf8ToBase64(JSON.stringify(produtos, null, 2));
 
-    let sha;
-    const cur = await ghFetch(`${contentsUrl}?ref=${branch}`);
-    if (cur.ok) {
-      const curData = await cur.json();
-      sha = curData.sha;
-    } else if (cur.status !== 404) {
+    // Busca o "sha" atual do arquivo. O GitHub exige esse código pra confirmar
+    // que estamos atualizando a versão mais recente, e não sobrescrevendo
+    // por cima do que outro aparelho acabou de enviar.
+    async function getSha() {
+      const cur = await ghFetch(`${contentsUrl}?ref=${branch}&t=${Date.now()}`);
+      if (cur.ok) {
+        const curData = await cur.json();
+        return curData.sha;
+      }
+      if (cur.status === 404) return undefined; // arquivo ainda não existe
       throw new Error('Não consegui checar o arquivo atual (status ' + cur.status + ')');
     }
 
-    const body = {
-      message: 'Atualiza catálogo via Painel Admin',
-      content: utf8ToBase64(JSON.stringify(produtos, null, 2)),
-      branch
-    };
-    if (sha) body.sha = sha;
+    async function tentarGravar(sha) {
+      const body = { message: 'Atualiza catálogo via Painel Admin', content, branch };
+      if (sha) body.sha = sha;
+      return ghFetch(contentsUrl, { method: 'PUT', body: JSON.stringify(body) });
+    }
 
-    const put = await ghFetch(contentsUrl, { method: 'PUT', body: JSON.stringify(body) });
+    let put = await tentarGravar(await getSha());
+
+    // 409/422 = outro aparelho publicou no meio do caminho. Pega o sha novo e
+    // tenta mais uma vez, em vez de simplesmente falhar.
+    if (put.status === 409 || put.status === 422) {
+      put = await tentarGravar(await getSha());
+    }
+
     if (!put.ok) {
       const errData = await put.json().catch(() => ({}));
+      if (put.status === 401) throw new Error('Token inválido ou expirado (401). Gere um token novo.');
+      if (put.status === 403) throw new Error('Token sem permissão de escrita (403). Precisa de "Contents: Read and write".');
+      if (put.status === 404) throw new Error('Repositório ou arquivo não encontrado (404). Confira as permissões do token.');
       throw new Error(errData.message || ('status ' + put.status));
     }
 
@@ -568,7 +594,11 @@ document.getElementById('btn-gh-config').addEventListener('click', () => {
 });
 
 document.getElementById('btn-gh-save').addEventListener('click', async () => {
-  const token = document.getElementById('gh-token').value.trim();
+  // Colar no celular costuma trazer espaços, quebras de linha e caracteres
+  // invisíveis junto — isso fazia o token ser recusado sem explicação.
+  const token = document.getElementById('gh-token').value
+    .replace(/[\s\u200B-\u200D\uFEFF]/g, '')
+    .trim();
   const msg = document.getElementById('gh-msg');
   msg.className = 'msg'; msg.textContent = '';
   if (!token) {
@@ -577,17 +607,18 @@ document.getElementById('btn-gh-save').addEventListener('click', async () => {
     return;
   }
   localStorage.setItem(GH_TOKEN_KEY, token);
+  document.getElementById('gh-token').value = token;
   msg.className = 'msg ok';
-  msg.textContent = 'Verificando acesso…';
+  msg.textContent = 'Verificando acesso e permissão de escrita…';
   try {
     ghBranch = null;
     await detectBranch();
     msg.className = 'msg ok';
-    msg.textContent = '✓ Conectado! A partir de agora, tudo que você salvar é publicado automaticamente.';
+    msg.textContent = '✓ Conectado com permissão de escrita! Tudo que você salvar vai para o site.';
     updateSyncBadge();
   } catch (err) {
     msg.className = 'msg err';
-    msg.textContent = 'Token salvo, mas não consegui acessar o repositório. Confira as permissões (Contents: Read and write) e o nome do repositório.';
+    msg.textContent = '✗ ' + (err.message || 'Não consegui acessar o repositório.');
   }
 });
 
