@@ -271,7 +271,7 @@ function loadProdutos() {
     fetchLatestFromGitHub()
       .then(data => {
         produtos = data;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(produtos));
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(produtos)); } catch (e) {}
         renderCatalog();
         updateSyncBadge();
       })
@@ -321,8 +321,15 @@ async function fetchLatestFromGitHub() {
   return parsed;
 }
 
+let publishQueued = false;
 function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(produtos));
+  // Cópia local é só um "extra": se o navegador estiver sem espaço
+  // (fotos grandes), NÃO pode impedir a publicação no site.
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(produtos));
+  } catch (e) {
+    console.warn('localStorage cheio, seguindo sem cópia local:', e);
+  }
   updateSyncBadge();
   publishToGitHub();
 }
@@ -403,7 +410,10 @@ async function detectBranch() {
 }
 
 async function publishToGitHub() {
-  if (!hasGhToken() || publishing) return;
+  if (!hasGhToken()) return;
+  // Se já está publicando, guarda o pedido e publica de novo no final,
+  // em vez de perder a alteração silenciosamente.
+  if (publishing) { publishQueued = true; return; }
   publishing = true;
   updateSyncBadge('publishing');
   try {
@@ -456,6 +466,7 @@ async function publishToGitHub() {
     showToast('⚠️ Falha ao publicar: ' + lastPublishError);
   } finally {
     publishing = false;
+    if (publishQueued) { publishQueued = false; publishToGitHub(); }
   }
 }
 
@@ -637,7 +648,7 @@ document.getElementById('btn-refresh').addEventListener('click', async () => {
       data = await r.json();
     }
     produtos = (Array.isArray(data) && data.length) ? data : produtos;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(produtos));
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(produtos)); } catch (e) {}
     if (editingId !== null) resetForm();
     renderCatalog();
     updateSyncBadge();
