@@ -184,6 +184,7 @@ textarea{resize:vertical;min-height:64px}
       O token fica guardado só neste navegador/celular — se usar outro aparelho, precisa configurar de novo lá também.
     </p>
     <div class="form-actions">
+      <button type="button" class="btn-ghost" id="btn-gh-test">🔍 testar conexão</button>
       <button type="button" class="btn-ghost" id="btn-gh-link">📱 copiar link p/ outro aparelho</button>
       <button type="button" class="btn-danger" id="btn-gh-remove">remover token</button>
       <button type="button" class="btn-primary" id="btn-gh-save">✓ salvar e conectar</button>
@@ -703,6 +704,31 @@ document.getElementById('btn-publish-now').addEventListener('click', () => {
     return;
   }
   publishToGitHub();
+});
+
+document.getElementById('btn-gh-test').addEventListener('click', async () => {
+  const msg = document.getElementById('gh-msg');
+  const out = [];
+  const show = (ok) => { msg.className = 'msg ' + (ok ? 'ok' : 'err'); msg.style.whiteSpace = 'pre-line'; msg.textContent = out.join('\n'); };
+  const typed = document.getElementById('gh-token').value.trim();
+  if (typed) localStorage.setItem(GH_TOKEN_KEY, typed);
+  out.push('Endereço da página: ' + location.protocol + '//' + (location.host || '(arquivo local)'));
+  if (location.protocol === 'file:') out.push('⚠️ Página aberta como ARQUIVO do aparelho. Abra pelo link do site.');
+  if (!hasGhToken()) { out.push('✗ 1) Token: NÃO configurado neste aparelho.'); show(false); return; }
+  out.push('✓ 1) Token: presente (' + localStorage.getItem(GH_TOKEN_KEY).length + ' caracteres)');
+  try {
+    const r = await ghFetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}`);
+    out.push((r.ok ? '✓' : '✗') + ' 2) Repositório ' + GH_OWNER + '/' + GH_REPO + ': status ' + r.status);
+    if (!r.ok) { out.push(r.status === 404 ? '→ Nome do repositório errado OU token sem acesso a ele.' : r.status === 401 ? '→ Token inválido/expirado.' : ''); show(false); return; }
+    const d = await r.json();
+    out.push((d.permissions && d.permissions.push === false ? '✗' : '✓') + ' 3) Permissão de escrita: ' + (d.permissions ? d.permissions.push : 'não informado'));
+    out.push('✓ 4) Branch: ' + d.default_branch);
+    const f = await ghFetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}?ref=${d.default_branch}`);
+    out.push((f.ok ? '✓' : '✗') + ' 5) produtos.json no repositório: status ' + f.status);
+    show(d.permissions ? d.permissions.push !== false && f.ok : f.ok);
+  } catch (e) {
+    out.push('✗ Erro de rede: ' + (e.message || e)); show(false);
+  }
 });
 
 document.getElementById('btn-gh-link').addEventListener('click', async () => {
