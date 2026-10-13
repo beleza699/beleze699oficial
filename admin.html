@@ -184,6 +184,7 @@ textarea{resize:vertical;min-height:64px}
       O token fica guardado só neste navegador/celular — se usar outro aparelho, precisa configurar de novo lá também.
     </p>
     <div class="form-actions">
+      <button type="button" class="btn-ghost" id="btn-gh-link">📱 copiar link p/ outro aparelho</button>
       <button type="button" class="btn-danger" id="btn-gh-remove">remover token</button>
       <button type="button" class="btn-primary" id="btn-gh-save">✓ salvar e conectar</button>
     </div>
@@ -252,6 +253,15 @@ let ghBranch = null; // detectado automaticamente na primeira publicação
 let publishing = false;
 let lastPublishError = '';
 
+// Configuração automática vinda do link "copiar link p/ outro aparelho"
+(function () {
+  const m = location.hash.match(/token=([^&]+)/);
+  if (m) {
+    try { localStorage.setItem(GH_TOKEN_KEY, decodeURIComponent(m[1])); } catch (e) {}
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+})();
+
 let produtos = [];
 let editingId = null;
 let uploadedImageData = null; // base64 (data URI) da foto enviada no form atual
@@ -312,11 +322,13 @@ function loadProdutosLocalOuArquivo() {
 async function fetchLatestFromGitHub() {
   const branch = await detectBranch();
   const contentsUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
-  const res = await ghFetch(`${contentsUrl}?ref=${branch}`);
+  // Accept "raw" devolve o conteúdo direto (funciona mesmo com arquivo grande
+  // e dispensa decodificar base64 — mais rápido).
+  const res = await ghFetch(`${contentsUrl}?ref=${branch}`, {
+    headers: { 'Accept': 'application/vnd.github.raw+json' }
+  });
   if (!res.ok) throw new Error('Não consegui buscar o arquivo (status ' + res.status + ')');
-  const data = await res.json();
-  const jsonStr = decodeURIComponent(escape(atob((data.content || '').replace(/\n/g, ''))));
-  const parsed = JSON.parse(jsonStr);
+  const parsed = JSON.parse(await res.text());
   if (!Array.isArray(parsed)) throw new Error('formato inválido');
   return parsed;
 }
@@ -419,6 +431,26 @@ async function publishToGitHub() {
   try {
     const branch = await detectBranch();
     const contentsUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
+
+    // Fotos novas (base64) são enviadas como arquivos em /imagens e o
+    // produtos.json guarda só o caminho. Isso deixa o JSON pequeno e rápido.
+    for (const prod of produtos) {
+      if (!(prod.image || '').startsWith('data:image')) continue;
+      const base64 = prod.image.split(',')[1];
+      const path = `imagens/produto-${prod.id}-${Date.now()}.jpg`;
+      const up = await ghFetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`, {
+        method: 'PUT',
+        body: JSON.stringify({ message: 'Foto do produto ' + prod.id, content: base64, branch })
+      });
+      if (!up.ok) {
+        const e = await up.json().catch(() => ({}));
+        throw new Error('Falha ao enviar a foto de "' + prod.name + '": ' + (e.message || up.status));
+      }
+      prod.image = path;
+    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(produtos)); } catch (e) {}
+    renderCatalog();
+
     const content = utf8ToBase64(JSON.stringify(produtos, null, 2));
 
     // Busca o "sha" atual do arquivo. O GitHub exige esse código pra confirmar
@@ -671,6 +703,14 @@ document.getElementById('btn-publish-now').addEventListener('click', () => {
     return;
   }
   publishToGitHub();
+});
+
+document.getElementById('btn-gh-link').addEventListener('click', async () => {
+  const t = localStorage.getItem(GH_TOKEN_KEY);
+  if (!t) { showToast('Conecte o token primeiro.'); return; }
+  const link = location.href.split('#')[0] + '#token=' + encodeURIComponent(t);
+  try { await navigator.clipboard.writeText(link); showToast('Link copiado! Abra no outro aparelho. Trate como senha.'); }
+  catch (e) { prompt('Copie este link e abra no outro aparelho (trate como senha):', link); }
 });
 
 document.getElementById('btn-gh-remove').addEventListener('click', () => {
